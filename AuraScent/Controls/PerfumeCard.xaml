@@ -3,12 +3,11 @@
              xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:m="clr-namespace:AuraScent.Models"
+             xmlns:local="clr-namespace:AuraScent.Controls"
              x:DataType="m:PerfumeSummary">
     <Border Style="{StaticResource Glass}">
         <Grid RowDefinitions="*,Auto" Padding="18">
-            <Label Text="{Binding Initial}"
-                   FontFamily="OpenSansSemibold" FontSize="150" TextColor="White" Opacity="0.10"
-                   HorizontalOptions="End" VerticalOptions="Start" Margin="0,-18,-4,0" />
+            <local:BottleView Perfume="{Binding .}" Margin="0,0,0,8" />
             <VerticalStackLayout Grid.Row="1" Spacing="4">
                 <Label Text="{Binding House}" Style="{StaticResource Eyebrow}" MaxLines="1" LineBreakMode="TailTruncation" />
                 <Label Text="{Binding Name}" Style="{StaticResource CardTitle}" MaxLines="2" LineBreakMode="TailTruncation" />

@@ -19,6 +19,7 @@
                         HeightRequest="42" FontSize="13" Padding="20,0" HorizontalOptions="Start" />
 
                 <VerticalStackLayout x:Name="HeroBlock" Opacity="0" Spacing="6">
+                    <ctl:BottleView Perfume="{Binding Summary}" AnimateLiquid="True" HeightRequest="240" />
                     <Label Text="{Binding Summary.House}" Style="{StaticResource Eyebrow}" />
                     <Label Text="{Binding Summary.Name}" Style="{StaticResource Headline}" FontSize="40" />
                     <Border Style="{StaticResource Chip}" HorizontalOptions="Start" Margin="0,6,0,0">
