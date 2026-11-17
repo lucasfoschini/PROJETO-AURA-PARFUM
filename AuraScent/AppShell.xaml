@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Shell x:Class="AuraScent.AppShell"
+       xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+       xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+       xmlns:views="clr-namespace:AuraScent.Views"
+       Shell.FlyoutBehavior="Flyout"
+       Shell.NavBarIsVisible="False"
+       Shell.BackgroundColor="{StaticResource Ink}"
+       Shell.TabBarBackgroundColor="#0B0B14"
+       Shell.TabBarTitleColor="{StaticResource Accent}"
+       Shell.TabBarUnselectedColor="{StaticResource TextMuted}"
+       FlyoutBackgroundColor="#0B0B14">
+
+    <Shell.Resources>
+        <Style Class="FlyoutItemLabelStyle" TargetType="Label">
+            <Setter Property="TextColor" Value="White" />
+            <Setter Property="FontFamily" Value="OpenSansSemibold" />
+        </Style>
+    </Shell.Resources>
+
+    <!-- MODO 2: menu lateral (Flyout) -->
+    <Shell.FlyoutHeader>
+        <Grid HeightRequest="190">
+            <Grid.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                    <GradientStop Color="#2B1055" Offset="0" />
+                    <GradientStop Color="#0B0B14" Offset="1" />
+                </LinearGradientBrush>
+            </Grid.Background>
+            <VerticalStackLayout VerticalOptions="End" Padding="24,0,24,22" Spacing="2">
+                <Label Text="AURA" FontSize="36" CharacterSpacing="10" TextColor="White" FontFamily="OpenSansSemibold" />
+                <Label Text="perfumes que sentem o clima" FontSize="13" TextColor="#B8B5C8" />
+            </VerticalStackLayout>
+        </Grid>
+    </Shell.FlyoutHeader>
+
+    <!-- MODO 1: abas inferiores (TabBar) dentro do primeiro item do Flyout -->
+    <FlyoutItem Title="Descobrir">
+        <Tab Title="Hoje">
+            <ShellContent Route="home" ContentTemplate="{DataTemplate views:HomePage}" />
+        </Tab>
+        <Tab Title="Explorar">
+            <ShellContent Route="explore" ContentTemplate="{DataTemplate views:ExplorePage}" />
+        </Tab>
+    </FlyoutItem>
+
+    <FlyoutItem Title="Favoritos">
+        <ShellContent Route="favorites" ContentTemplate="{DataTemplate views:FavoritesPage}" />
+    </FlyoutItem>
+
+    <FlyoutItem Title="Sobre o app">
+        <ShellContent Route="about" ContentTemplate="{DataTemplate views:AboutPage}" />
+    </FlyoutItem>
+
+</Shell>

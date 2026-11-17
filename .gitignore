@@ -1,0 +1,43 @@
+# Saídas de build .NET e MAUI
+**/bin/
+**/obj/
+artifacts/
+TestResults/
+
+# Visual Studio e IDEs
+.vs/
+.vscode/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.csproj.user
+*.userprefs
+
+# Logs e arquivos temporários
+*.log
+*.tmp
+*.temp
+
+# Pacotes e instaladores gerados
+*.apk
+*.aab
+*.ipa
+*.appx
+*.msix
+*.msixbundle
+*.appxbundle
+AppPackages/
+
+# Certificados e chaves de assinatura locais
+*.pfx
+*.p12
+*.keystore
+*.jks
+*.publishsettings
+
+# Arquivos do sistema operacional
+.DS_Store
+Thumbs.db
+desktop.ini

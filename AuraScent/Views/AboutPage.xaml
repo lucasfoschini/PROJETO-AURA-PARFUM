@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage x:Class="AuraScent.Views.AboutPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:AuraScent.ViewModels"
+    xmlns:ctl="clr-namespace:AuraScent.Controls"
+    Shell.NavBarIsVisible="False"
+    BackgroundColor="{StaticResource Ink}">
+
+    <Grid>
+        <ctl:AuroraBackground />
+        <ScrollView>
+            <VerticalStackLayout Padding="24,56,24,40" Spacing="22">
+                <Grid ColumnDefinitions="*,Auto">
+                    <VerticalStackLayout Spacing="2">
+                        <Label Text="sobre" Style="{StaticResource Eyebrow}" />
+                        <Label Text="Aura" Style="{StaticResource Headline}" />
+                    </VerticalStackLayout>
+                    <ctl:MenuButton Grid.Column="1" VerticalOptions="Start" />
+                </Grid>
+
+                <Label Style="{StaticResource Body}"
+                       Text="Aura cruza duas APIs: o clima da sua cidade (Open-Meteo) escolhe a atmosfera do app, e essa atmosfera guia a curadoria de perfumes da Scento Perfume API." />
+
+                <Border Style="{StaticResource Glass}" Padding="20">
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="API 1 · Scento Perfume" Style="{StaticResource Title}" />
+                        <Label Text="Busca de perfumes, casas e pirâmide olfativa (topo, coração, fundo)." Style="{StaticResource Body}" />
+                    </VerticalStackLayout>
+                </Border>
+                <Border Style="{StaticResource Glass}" Padding="20">
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="API 2 · Open-Meteo" Style="{StaticResource Title}" />
+                        <Label Text="Geocodificação da cidade e clima atual (temperatura, chuva, dia/noite)." Style="{StaticResource Body}" />
+                    </VerticalStackLayout>
+                </Border>
+                <Border Style="{StaticResource Glass}" Padding="20">
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="3 modos de navegação" Style="{StaticResource Title}" />
+                        <Label Text="Abas inferiores (Hoje / Explorar) · menu lateral Flyout · pilha de páginas com modal em tela cheia (Detalhe e Ritual olfativo)." Style="{StaticResource Body}" />
+                    </VerticalStackLayout>
+                </Border>
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+</ContentPage>

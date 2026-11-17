@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage x:Class="AuraScent.Views.ImmersivePage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:AuraScent.ViewModels"
+    xmlns:ctl="clr-namespace:AuraScent.Controls"
+    x:DataType="vm:ImmersiveViewModel"
+    Shell.PresentationMode="ModalAnimated"
+    Shell.NavBarIsVisible="False"
+    BackgroundColor="Black">
+
+    <Grid>
+        <ctl:AuroraBackground Atmosphere="{Binding State.Current}" />
+
+        <Grid RowDefinitions="Auto,*,Auto" Padding="24,56,24,56">
+
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                <VerticalStackLayout Spacing="2">
+                    <Label Text="{Binding House}" Style="{StaticResource Eyebrow}" />
+                    <Label Text="{Binding PerfumeName}" Style="{StaticResource Title}" />
+                </VerticalStackLayout>
+                <Button Grid.Column="1" Text="Sair" Command="{Binding CloseCommand}" Style="{StaticResource PillButton}"
+                        HeightRequest="40" FontSize="13" Padding="22,0" VerticalOptions="Start" />
+            </Grid>
+
+            <Grid Grid.Row="1" HorizontalOptions="Center" VerticalOptions="Center">
+                <Ellipse x:Name="Halo" WidthRequest="320" HeightRequest="320" Opacity="0.55">
+                    <Ellipse.Fill>
+                        <RadialGradientBrush Center="0.5,0.5" Radius="0.5">
+                            <GradientStop Color="#66FFFFFF" Offset="0" />
+                            <GradientStop Color="#00FFFFFF" Offset="1" />
+                        </RadialGradientBrush>
+                    </Ellipse.Fill>
+                </Ellipse>
+                <Ellipse x:Name="Core" WidthRequest="170" HeightRequest="170">
+                    <Ellipse.Fill>
+                        <RadialGradientBrush Center="0.5,0.5" Radius="0.5">
+                            <GradientStop Color="#CCFFFFFF" Offset="0" />
+                            <GradientStop Color="#22FFFFFF" Offset="1" />
+                        </RadialGradientBrush>
+                    </Ellipse.Fill>
+                </Ellipse>
+                <Label x:Name="BreathLabel" Text="Inspire" TextColor="#07070D" FontFamily="OpenSansSemibold"
+                       FontSize="16" CharacterSpacing="3" HorizontalOptions="Center" VerticalOptions="Center" />
+            </Grid>
+
+            <VerticalStackLayout Grid.Row="2" Spacing="8" HorizontalOptions="Center">
+                <Label x:Name="LayerLabel" Style="{StaticResource Eyebrow}" HorizontalTextAlignment="Center" />
+                <Label x:Name="NoteLabel" Style="{StaticResource Headline}" FontSize="42" HorizontalTextAlignment="Center" Opacity="0" />
+                <Label x:Name="ProgressLabel" Style="{StaticResource Caption}" HorizontalTextAlignment="Center" />
+            </VerticalStackLayout>
+        </Grid>
+    </Grid>
+</ContentPage>

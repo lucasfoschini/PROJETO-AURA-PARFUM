@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage x:Class="AuraScent.Views.FavoritesPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:AuraScent.ViewModels"
+    xmlns:ctl="clr-namespace:AuraScent.Controls"
+    xmlns:m="clr-namespace:AuraScent.Models"
+    x:DataType="vm:FavoritesViewModel"
+    Shell.NavBarIsVisible="False"
+    BackgroundColor="{StaticResource Ink}">
+
+    <Grid>
+        <ctl:AuroraBackground Atmosphere="{Binding State.Current}" />
+
+        <Grid RowDefinitions="Auto,*" Padding="24,56,24,0" RowSpacing="18">
+            <Grid ColumnDefinitions="*,Auto">
+                <VerticalStackLayout Spacing="2">
+                    <Label Text="sua coleção" Style="{StaticResource Eyebrow}" />
+                    <Label Text="Favoritos" Style="{StaticResource Headline}" />
+                </VerticalStackLayout>
+                <ctl:MenuButton Grid.Column="1" VerticalOptions="Start" />
+            </Grid>
+
+            <CollectionView Grid.Row="1" ItemsSource="{Binding Items}" VerticalScrollBarVisibility="Never">
+                <CollectionView.ItemsLayout>
+                    <GridItemsLayout Orientation="Vertical" Span="2" VerticalItemSpacing="12" HorizontalItemSpacing="12" />
+                </CollectionView.ItemsLayout>
+                <CollectionView.EmptyView>
+                    <Label Text="Nada por aqui ainda. Abra um perfume e toque em “Favoritar”."
+                           Style="{StaticResource Body}" Margin="0,24,0,0" />
+                </CollectionView.EmptyView>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="m:PerfumeSummary">
+                        <ctl:PerfumeCard HeightRequest="190">
+                            <ctl:PerfumeCard.GestureRecognizers>
+                                <TapGestureRecognizer
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type vm:FavoritesViewModel}}, Path=OpenPerfumeCommand}"
+                                    CommandParameter="{Binding .}" />
+                            </ctl:PerfumeCard.GestureRecognizers>
+                        </ctl:PerfumeCard>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </Grid>
+    </Grid>
+</ContentPage>
