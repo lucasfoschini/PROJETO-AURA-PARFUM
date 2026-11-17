@@ -11,6 +11,8 @@ public interface IPerfumeService
 public interface IWeatherService
 {
     Task<WeatherSnapshot> GetCurrentAsync(string city, CancellationToken ct = default);
+    Task<WeatherSnapshot> GetCurrentAsync(CitySuggestion city, CancellationToken ct = default);
+    Task<IReadOnlyList<CitySuggestion>> SearchCitiesAsync(string query, CancellationToken ct = default);
 }
 
 public interface IFavoritesService

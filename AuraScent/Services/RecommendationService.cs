@@ -17,9 +17,17 @@ public sealed class RecommendationService
         _perfumes = perfumes;
     }
 
-    public async Task<Recommendation> GetAsync(string city, CancellationToken ct = default)
+    public Task<Recommendation> GetAsync(string city, CancellationToken ct = default) =>
+        BuildRecommendationAsync(token => _weather.GetCurrentAsync(city, token), ct);
+
+    public Task<Recommendation> GetAsync(CitySuggestion city, CancellationToken ct = default) =>
+        BuildRecommendationAsync(token => _weather.GetCurrentAsync(city, token), ct);
+
+    private async Task<Recommendation> BuildRecommendationAsync(
+        Func<CancellationToken, Task<WeatherSnapshot>> getWeather,
+        CancellationToken ct)
     {
-        var weather = await _weather.GetCurrentAsync(city, ct);
+        var weather = await getWeather(ct);
         var atmosphere = AtmosphereCatalog.For(weather);
 
         var searches = await Task.WhenAll(atmosphere.SearchTerms.Select(t => SafeSearchAsync(t, ct)));

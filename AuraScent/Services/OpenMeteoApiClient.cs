@@ -11,7 +11,37 @@ public sealed class OpenMeteoApiClient : ApiClientBase, IWeatherService
 
     public async Task<WeatherSnapshot> GetCurrentAsync(string city, CancellationToken ct = default)
     {
-        var (name, lat, lon) = await GeocodeAsync(string.IsNullOrWhiteSpace(city) ? "São Paulo" : city.Trim(), ct);
+        var location = await GeocodeAsync(string.IsNullOrWhiteSpace(city) ? "São Paulo" : city.Trim(), ct);
+        return await GetCurrentAsync(location, ct);
+    }
+
+    public Task<WeatherSnapshot> GetCurrentAsync(CitySuggestion city, CancellationToken ct = default) =>
+        GetCurrentAsync((city.Name, city.Latitude, city.Longitude), ct);
+
+    public async Task<IReadOnlyList<CitySuggestion>> SearchCitiesAsync(string query, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(query)) return Array.Empty<CitySuggestion>();
+
+        var url = $"https://geocoding-api.open-meteo.com/v1/search?name={Uri.EscapeDataString(query.Trim())}&count=8&language=pt&format=json";
+        using var doc = await GetJsonAsync(url, ct);
+        if (doc.RootElement.Child("results") is not { ValueKind: System.Text.Json.JsonValueKind.Array } results)
+            return Array.Empty<CitySuggestion>();
+
+        return results.EnumerateArray()
+            .Select(item => new CitySuggestion(
+                item.Str("name") ?? "",
+                item.Str("admin1") ?? "",
+                item.Str("country") ?? "",
+                item.Dbl("latitude"),
+                item.Dbl("longitude")))
+            .Where(city => !string.IsNullOrWhiteSpace(city.Name))
+            .DistinctBy(city => $"{city.Name}|{city.Region}|{city.Country}", StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+    }
+
+    private async Task<WeatherSnapshot> GetCurrentAsync((string Name, double Lat, double Lon) location, CancellationToken ct)
+    {
+        var (name, lat, lon) = location;
 
         var inv = System.Globalization.CultureInfo.InvariantCulture;
         var url = $"https://api.open-meteo.com/v1/forecast?latitude={lat.ToString(inv)}&longitude={lon.ToString(inv)}" +
@@ -31,14 +61,11 @@ public sealed class OpenMeteoApiClient : ApiClientBase, IWeatherService
 
     private async Task<(string Name, double Lat, double Lon)> GeocodeAsync(string city, CancellationToken ct)
     {
-        var url = $"https://geocoding-api.open-meteo.com/v1/search?name={Uri.EscapeDataString(city)}&count=1&language=pt&format=json";
-        using var doc = await GetJsonAsync(url, ct);
-
-        if (doc.RootElement.Child("results") is { ValueKind: System.Text.Json.JsonValueKind.Array } results
-            && results.GetArrayLength() > 0)
+        var results = await SearchCitiesAsync(city, ct);
+        if (results.Count > 0)
         {
             var first = results[0];
-            return (first.Str("name") ?? city, first.Dbl("latitude"), first.Dbl("longitude"));
+            return (first.Name, first.Latitude, first.Longitude);
         }
 
         throw new ApiException(ServiceName, $"Não encontrei a cidade “{city}”.");

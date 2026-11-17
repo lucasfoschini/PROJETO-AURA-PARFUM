@@ -28,6 +28,29 @@
                            ReturnCommand="{Binding SearchCommand}" />
                 </Border>
 
+                <CollectionView ItemsSource="{Binding Suggestions}" IsVisible="{Binding ShowSuggestions}"
+                                HeightRequest="190" SelectionMode="None">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="m:PerfumeSuggestion">
+                            <Border Style="{StaticResource Glass}" Padding="12,8" Margin="0,0,0,6">
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:ExploreViewModel}}, Path=SelectSuggestionCommand}"
+                                        CommandParameter="{Binding .}" />
+                                </Border.GestureRecognizers>
+                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                                    <Label Text="{Binding Category}" TextColor="{StaticResource Accent}"
+                                           FontSize="11" VerticalOptions="Center" />
+                                    <VerticalStackLayout Grid.Column="1" Spacing="2">
+                                        <Label Text="{Binding Title}" TextColor="White" />
+                                        <Label Text="{Binding Subtitle}" Style="{StaticResource Caption}" />
+                                    </VerticalStackLayout>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+
                 <ScrollView Orientation="Horizontal" HorizontalScrollBarVisibility="Never">
                     <HorizontalStackLayout Spacing="8" BindableLayout.ItemsSource="{Binding QuickTerms}">
                         <BindableLayout.ItemTemplate>
