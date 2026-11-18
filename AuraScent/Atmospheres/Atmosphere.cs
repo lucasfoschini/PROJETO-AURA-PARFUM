@@ -2,10 +2,6 @@ using AuraScent.Models;
 
 namespace AuraScent.Atmospheres;
 
-/// <summary>
-/// Classe base abstrata: cada clima é uma "atmosfera" com visual próprio e
-/// uma curadoria de notas. Polimorfismo: a UI só conhece Atmosphere.
-/// </summary>
 public abstract class Atmosphere
 {
     public abstract string Name { get; }
@@ -18,7 +14,6 @@ public abstract class Atmosphere
     public abstract Color Accent { get; }
     public abstract Color Glow { get; }
 
-    /// <summary>Termos (em inglês, o idioma da base Scento) usados na busca.</summary>
     public abstract IReadOnlyList<string> SearchTerms { get; }
 
     public abstract bool Fits(WeatherSnapshot weather);
@@ -89,7 +84,6 @@ public sealed class TemperateAtmosphere : Atmosphere
     public override bool Fits(WeatherSnapshot w) => true;
 }
 
-/// <summary>Resolve a atmosfera ideal (primeira que "serve", em ordem de prioridade).</summary>
 public static class AtmosphereCatalog
 {
     private static readonly IReadOnlyList<Atmosphere> All = new Atmosphere[]

@@ -3,9 +3,6 @@ using AuraScent.Models;
 
 namespace AuraScent.Services;
 
-/// <summary>
-/// Fachada que une as duas APIs: clima (Open-Meteo) -> atmosfera -> perfumes (Scento).
-/// </summary>
 public sealed class RecommendationService
 {
     private readonly IWeatherService _weather;
@@ -45,7 +42,6 @@ public sealed class RecommendationService
         catch (ApiException) { return Array.Empty<PerfumeSummary>(); }
     }
 
-    // Round-robin: 1º de cada termo, depois 2º de cada termo... (variedade em vez de blocos)
     private static IEnumerable<PerfumeSummary> Interleave(IReadOnlyList<IReadOnlyList<PerfumeSummary>> lists)
     {
         var max = lists.Count == 0 ? 0 : lists.Max(l => Math.Min(l.Count, 4));

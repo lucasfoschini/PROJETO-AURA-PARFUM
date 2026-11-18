@@ -6,7 +6,7 @@
        Shell.FlyoutBehavior="Flyout"
        Shell.NavBarIsVisible="False"
        Shell.BackgroundColor="{StaticResource Ink}"
-       Shell.TabBarBackgroundColor="#0B0B14"
+       Shell.TabBarBackgroundColor="#0B0B14" Shell.TabBarForegroundColor="{StaticResource Accent}"
        Shell.TabBarTitleColor="{StaticResource Accent}"
        Shell.TabBarUnselectedColor="{StaticResource TextMuted}"
        FlyoutBackgroundColor="#0B0B14">
@@ -18,9 +18,47 @@
         </Style>
     </Shell.Resources>
 
-    <!-- MODO 2: menu lateral (Flyout) -->
+    <Shell.ItemTemplate>
+        <DataTemplate x:DataType="BaseShellItem">
+            <Grid HeightRequest="56" Padding="16,4">
+                <VisualStateManager.VisualStateGroups>
+                    <VisualStateGroupList>
+                        <VisualStateGroup x:Name="CommonStates">
+                            <VisualState x:Name="Normal">
+                                <VisualState.Setters>
+                                    <Setter TargetName="Pill" Property="Border.BackgroundColor" Value="Transparent" />
+                                    <Setter TargetName="Dot" Property="BoxView.Color" Value="Transparent" />
+                                </VisualState.Setters>
+                            </VisualState>
+                            <VisualState x:Name="Selected">
+                                <VisualState.Setters>
+                                    <Setter TargetName="Pill" Property="Border.BackgroundColor" Value="#1FE8D5A8" />
+                                    <Setter TargetName="Dot" Property="BoxView.Color" Value="{StaticResource Accent}" />
+                                    <Setter TargetName="Lbl" Property="Label.TextColor" Value="{StaticResource Accent}" />
+                                </VisualState.Setters>
+                            </VisualState>
+                        </VisualStateGroup>
+                    </VisualStateGroupList>
+                </VisualStateManager.VisualStateGroups>
+                <Border x:Name="Pill" StrokeThickness="0" BackgroundColor="Transparent">
+                    <Border.StrokeShape><RoundRectangle CornerRadius="16" /></Border.StrokeShape>
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14" Padding="16,0">
+                        <BoxView x:Name="Dot" WidthRequest="6" HeightRequest="6" CornerRadius="3" VerticalOptions="Center" />
+                        <Label x:Name="Lbl" Grid.Column="1" Text="{Binding Title}" FontSize="16" TextColor="White"
+                               FontFamily="OpenSansSemibold" VerticalOptions="Center" />
+                    </Grid>
+                </Border>
+            </Grid>
+        </DataTemplate>
+    </Shell.ItemTemplate>
+
+    <Shell.FlyoutFooter>
+        <Label Text="Aura · feito para sentir o clima" FontSize="12" TextColor="#B8B5C8"
+               Padding="24,16,24,28" Opacity="0.7" />
+    </Shell.FlyoutFooter>
+
     <Shell.FlyoutHeader>
-        <Grid HeightRequest="190">
+        <Grid HeightRequest="220">
             <Grid.Background>
                 <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
                     <GradientStop Color="#2B1055" Offset="0" />
@@ -28,13 +66,13 @@
                 </LinearGradientBrush>
             </Grid.Background>
             <VerticalStackLayout VerticalOptions="End" Padding="24,0,24,22" Spacing="2">
-                <Label Text="AURA" FontSize="36" CharacterSpacing="10" TextColor="White" FontFamily="OpenSansSemibold" />
+                <BoxView WidthRequest="36" HeightRequest="2" Color="{StaticResource Accent}" HorizontalOptions="Start" Margin="0,0,0,8" />
+                <Label Text="AURA" FontSize="40" CharacterSpacing="12" TextColor="White" FontFamily="OpenSansSemibold" />
                 <Label Text="perfumes que sentem o clima" FontSize="13" TextColor="#B8B5C8" />
             </VerticalStackLayout>
         </Grid>
     </Shell.FlyoutHeader>
 
-    <!-- MODO 1: abas inferiores (TabBar) dentro do primeiro item do Flyout -->
     <FlyoutItem Title="Descobrir">
         <Tab Title="Hoje">
             <ShellContent Route="home" ContentTemplate="{DataTemplate views:HomePage}" />

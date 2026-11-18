@@ -2,7 +2,6 @@ namespace AuraScent.Controls;
 
 public static class Motion
 {
-    /// <summary>Entrada suave: sobe 28px e aparece.</summary>
     public static async Task RevealAsync(this VisualElement view, int delayMs = 0, uint duration = 750)
     {
         view.Opacity = 0;

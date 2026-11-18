@@ -12,7 +12,10 @@ public partial class ExploreViewModel : BaseViewModel
 
     public ObservableCollection<PerfumeSummary> Results { get; } = new();
     public ObservableCollection<PerfumeSuggestion> Suggestions { get; } = new();
-    public IReadOnlyList<string> QuickTerms { get; } = new[] { "oud", "rose", "vanilla", "citrus", "amber", "tobacco", "musk", "wood" };
+    public IReadOnlyList<string> QuickTerms { get; } = new[]
+    {
+        "Oud", "Rosa", "Baunilha", "Cítricos", "Âmbar", "Tabaco", "Almíscar", "Madeira"
+    };
 
     [ObservableProperty] private string _query = "";
     [ObservableProperty] private bool _showSuggestions;
@@ -21,7 +24,13 @@ public partial class ExploreViewModel : BaseViewModel
     private bool _suppressQuerySuggestions;
 
     public ExploreViewModel(IPerfumeService perfumes, AtmosphereState state, INavigationService navigation)
-        : base(state, navigation) => _perfumes = perfumes;
+        : base(state, navigation)
+    {
+        _perfumes = perfumes;
+        Results.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasNoResults));
+    }
+
+    public bool HasNoResults => Results.Count == 0;
 
     partial void OnQueryChanged(string value)
     {
@@ -47,13 +56,15 @@ public partial class ExploreViewModel : BaseViewModel
             if (cts.IsCancellationRequested || !string.Equals(trimmedQuery, Query.Trim(), StringComparison.OrdinalIgnoreCase)) return;
 
             foreach (var note in QuickTerms
-                         .Where(term => term.Contains(trimmedQuery, StringComparison.OrdinalIgnoreCase))
+                         .Where(term => NoteTranslator.ContainsIgnoringDiacritics(term, trimmedQuery) ||
+                                        NoteTranslator.ToEnglishSearchTerm(term).Contains(trimmedQuery, StringComparison.OrdinalIgnoreCase))
                          .Take(3))
                 Suggestions.Add(new PerfumeSuggestion("Nota", note, "Buscar perfumes com esta nota", note));
 
             try
             {
-                var matches = await _perfumes.SearchAsync(trimmedQuery, cts.Token);
+                var apiQuery = NoteTranslator.ToEnglishSearchTerm(trimmedQuery);
+                var matches = await _perfumes.SearchAsync(apiQuery, cts.Token);
                 if (cts.IsCancellationRequested || !string.Equals(trimmedQuery, Query.Trim(), StringComparison.OrdinalIgnoreCase)) return;
 
                 foreach (var house in matches
@@ -97,7 +108,8 @@ public partial class ExploreViewModel : BaseViewModel
 
         await RunSafeAsync(async () =>
         {
-            var found = await _perfumes.SearchAsync(q.Trim());
+            var apiQuery = NoteTranslator.ToEnglishSearchTerm(q.Trim());
+            var found = await _perfumes.SearchAsync(apiQuery);
             Results.Clear();
             foreach (var p in found) Results.Add(p);
         });

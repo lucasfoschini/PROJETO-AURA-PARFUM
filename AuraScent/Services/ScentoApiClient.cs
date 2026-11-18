@@ -3,9 +3,6 @@ using AuraScent.Models;
 
 namespace AuraScent.Services;
 
-/// <summary>
-/// Scento Perfume API (gratuita, sem chave): https://www.scento.com/developers/perfume-api
-/// </summary>
 public sealed class ScentoApiClient : ApiClientBase, IPerfumeService
 {
     public const string BaseUrl = "https://www.scento.com/api/perfume/v1/";
@@ -44,7 +41,6 @@ public sealed class ScentoApiClient : ApiClientBase, IPerfumeService
         return new PerfumeDetail(summary, lede, layers, url);
     }
 
-    // O formato da pirâmide é lido de forma tolerante (objeto {top,heart,base} ou lista de camadas).
     private static IReadOnlyList<NoteLayer> ParsePyramid(JsonElement? detail)
     {
         var layers = new List<NoteLayer>();

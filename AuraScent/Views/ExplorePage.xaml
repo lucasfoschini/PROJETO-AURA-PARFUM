@@ -12,89 +12,86 @@
     <Grid>
         <ctl:AuroraBackground Atmosphere="{Binding State.Current}" />
 
-        <Grid RowDefinitions="Auto,Auto,*" Padding="24,56,24,0" RowSpacing="18">
-            <Grid ColumnDefinitions="*,Auto">
-                <VerticalStackLayout Spacing="2">
-                    <Label Text="explorar" Style="{StaticResource Eyebrow}" />
-                    <Label Text="Encontre sua assinatura" Style="{StaticResource Headline}" />
-                </VerticalStackLayout>
-                <ctl:MenuButton Grid.Column="1" VerticalOptions="Start" />
-            </Grid>
+        <ScrollView VerticalScrollBarVisibility="Never">
+            <VerticalStackLayout Padding="24,56,24,40" Spacing="18">
+                <Grid ColumnDefinitions="*,Auto">
+                    <VerticalStackLayout Spacing="2">
+                        <Label Text="explorar" Style="{StaticResource Eyebrow}" />
+                        <Label Text="Encontre sua assinatura" Style="{StaticResource Headline}" />
+                    </VerticalStackLayout>
+                    <ctl:MenuButton Grid.Column="1" VerticalOptions="Start" />
+                </Grid>
 
-            <VerticalStackLayout Grid.Row="1" Spacing="12">
-                <Border Style="{StaticResource Glass}" Padding="18,4">
-                    <Entry Text="{Binding Query}" Style="{StaticResource GhostEntry}"
-                           Placeholder="Nota, casa ou perfume…" ReturnType="Search"
-                           ReturnCommand="{Binding SearchCommand}" />
-                </Border>
+                <VerticalStackLayout Spacing="12">
+                    <Border Style="{StaticResource Glass}" Padding="18,4">
+                        <Entry Text="{Binding Query}" Style="{StaticResource GhostEntry}"
+                               Placeholder="Nota, casa ou perfume…" ReturnType="Search"
+                               ReturnCommand="{Binding SearchCommand}" />
+                    </Border>
 
-                <CollectionView ItemsSource="{Binding Suggestions}" IsVisible="{Binding ShowSuggestions}"
-                                HeightRequest="190" SelectionMode="None">
-                    <CollectionView.ItemTemplate>
-                        <DataTemplate x:DataType="m:PerfumeSuggestion">
-                            <Border Style="{StaticResource Glass}" Padding="12,8" Margin="0,0,0,6">
-                                <Border.GestureRecognizers>
-                                    <TapGestureRecognizer
-                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:ExploreViewModel}}, Path=SelectSuggestionCommand}"
-                                        CommandParameter="{Binding .}" />
-                                </Border.GestureRecognizers>
-                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                                    <Label Text="{Binding Category}" TextColor="{StaticResource Accent}"
-                                           FontSize="11" VerticalOptions="Center" />
-                                    <VerticalStackLayout Grid.Column="1" Spacing="2">
-                                        <Label Text="{Binding Title}" TextColor="White" />
-                                        <Label Text="{Binding Subtitle}" Style="{StaticResource Caption}" />
-                                    </VerticalStackLayout>
-                                </Grid>
-                            </Border>
-                        </DataTemplate>
-                    </CollectionView.ItemTemplate>
-                </CollectionView>
-
-                <ScrollView Orientation="Horizontal" HorizontalScrollBarVisibility="Never">
-                    <HorizontalStackLayout Spacing="8" BindableLayout.ItemsSource="{Binding QuickTerms}">
+                    <VerticalStackLayout Spacing="6" IsVisible="{Binding ShowSuggestions}"
+                                         BindableLayout.ItemsSource="{Binding Suggestions}">
                         <BindableLayout.ItemTemplate>
-                            <DataTemplate x:DataType="x:String">
-                                <Border Style="{StaticResource Chip}">
+                            <DataTemplate x:DataType="m:PerfumeSuggestion">
+                                <Border Style="{StaticResource Glass}" Padding="12,8">
                                     <Border.GestureRecognizers>
                                         <TapGestureRecognizer
-                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:ExploreViewModel}}, Path=SearchCommand}"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:ExploreViewModel}}, Path=SelectSuggestionCommand}"
                                             CommandParameter="{Binding .}" />
                                     </Border.GestureRecognizers>
-                                    <Label Text="{Binding .}" TextColor="White" FontSize="14" />
+                                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                                        <Label Text="{Binding Category}" TextColor="{StaticResource Accent}"
+                                               FontSize="11" VerticalOptions="Center" />
+                                        <VerticalStackLayout Grid.Column="1" Spacing="2">
+                                            <Label Text="{Binding Title}" TextColor="White" />
+                                            <Label Text="{Binding Subtitle}" Style="{StaticResource Caption}" />
+                                        </VerticalStackLayout>
+                                    </Grid>
                                 </Border>
                             </DataTemplate>
                         </BindableLayout.ItemTemplate>
-                    </HorizontalStackLayout>
-                </ScrollView>
+                    </VerticalStackLayout>
 
-                <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" Color="{StaticResource Accent}" HorizontalOptions="Start" />
-                <Label Text="{Binding ErrorMessage}" IsVisible="{Binding HasError}" TextColor="#FF9A9A" />
+                    <ScrollView Orientation="Horizontal" HorizontalScrollBarVisibility="Never">
+                        <HorizontalStackLayout Spacing="8" BindableLayout.ItemsSource="{Binding QuickTerms}">
+                            <BindableLayout.ItemTemplate>
+                                <DataTemplate x:DataType="x:String">
+                                    <Border Style="{StaticResource Chip}">
+                                        <Border.GestureRecognizers>
+                                            <TapGestureRecognizer
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:ExploreViewModel}}, Path=SearchCommand}"
+                                                CommandParameter="{Binding .}" />
+                                        </Border.GestureRecognizers>
+                                        <Label Text="{Binding .}" TextColor="White" FontSize="14" />
+                                    </Border>
+                                </DataTemplate>
+                            </BindableLayout.ItemTemplate>
+                        </HorizontalStackLayout>
+                    </ScrollView>
+
+                    <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" Color="{StaticResource Accent}" HorizontalOptions="Start" />
+                    <Label Text="{Binding ErrorMessage}" IsVisible="{Binding HasError}" TextColor="#FF9A9A" />
+                </VerticalStackLayout>
+
+                <Label Text="Busque por uma nota (oud, rosa, baunilha…), uma casa ou o nome de um perfume."
+                       Style="{StaticResource Body}" Margin="0,6,0,0"
+                       IsVisible="{Binding HasNoResults}" />
+
+                <FlexLayout Wrap="Wrap" Direction="Row" JustifyContent="SpaceBetween" AlignItems="Start"
+                            BindableLayout.ItemsSource="{Binding Results}">
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate x:DataType="m:PerfumeSummary">
+                            <ctl:PerfumeCard HeightRequest="190" FlexLayout.Basis="48.5%" Margin="0,0,0,12">
+                                <ctl:PerfumeCard.GestureRecognizers>
+                                    <TapGestureRecognizer
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:ExploreViewModel}}, Path=OpenPerfumeCommand}"
+                                        CommandParameter="{Binding .}" />
+                                </ctl:PerfumeCard.GestureRecognizers>
+                            </ctl:PerfumeCard>
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </FlexLayout>
             </VerticalStackLayout>
-
-            <CollectionView Grid.Row="2" ItemsSource="{Binding Results}" VerticalScrollBarVisibility="Never">
-                <CollectionView.ItemsLayout>
-                    <GridItemsLayout Orientation="Vertical" Span="2" VerticalItemSpacing="12" HorizontalItemSpacing="12" />
-                </CollectionView.ItemsLayout>
-                <CollectionView.EmptyView>
-                    <Label Text="Busque por uma nota (oud, rose…), uma casa ou o nome de um perfume."
-                           Style="{StaticResource Body}" Margin="0,24,0,0" />
-                </CollectionView.EmptyView>
-                <CollectionView.Footer>
-                    <BoxView HeightRequest="24" Color="Transparent" />
-                </CollectionView.Footer>
-                <CollectionView.ItemTemplate>
-                    <DataTemplate x:DataType="m:PerfumeSummary">
-                        <ctl:PerfumeCard HeightRequest="190">
-                            <ctl:PerfumeCard.GestureRecognizers>
-                                <TapGestureRecognizer
-                                    Command="{Binding Source={RelativeSource AncestorType={x:Type vm:ExploreViewModel}}, Path=OpenPerfumeCommand}"
-                                    CommandParameter="{Binding .}" />
-                            </ctl:PerfumeCard.GestureRecognizers>
-                        </ctl:PerfumeCard>
-                    </DataTemplate>
-                </CollectionView.ItemTemplate>
-            </CollectionView>
-        </Grid>
+        </ScrollView>
     </Grid>
 </ContentPage>

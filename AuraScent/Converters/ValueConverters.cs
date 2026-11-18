@@ -2,7 +2,6 @@ using System.Globalization;
 
 namespace AuraScent.Converters;
 
-/// <summary>Retorna true quando a string não está vazia/nula.</summary>
 public sealed class StringToBoolConverter : IValueConverter
 {
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture) =>
@@ -12,7 +11,6 @@ public sealed class StringToBoolConverter : IValueConverter
         throw new NotSupportedException();
 }
 
-/// <summary>Retorna true quando o int é maior que zero.</summary>
 public sealed class IntToBoolConverter : IValueConverter
 {
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture) =>

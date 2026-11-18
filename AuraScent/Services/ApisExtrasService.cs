@@ -6,33 +6,19 @@ using AuraScent.Models;
 
 namespace AuraScent.Services;
 
-/// <summary>
-/// Serviço que centraliza as quatro integrações complementares:
-/// 1. FlagCDN — bandeiras dos países.
-/// 2. 10ML Fragrance Index — dados enriquecidos dos perfumes.
-/// 3. MyMemory — tradução para português brasileiro.
-/// 4. Wikipedia — imagens das notas olfativas.
-/// </summary>
 public sealed class ApisExtrasService : IApisExtrasService
 {
     private readonly IHttpClientFactory _httpFactory;
     private readonly ConcurrentDictionary<string, string> _translationCache = new(StringComparer.Ordinal);
-    private readonly ConcurrentDictionary<string, string> _noteImageCache = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, EnrichedPerfumeData> _enrichedCache = new(StringComparer.OrdinalIgnoreCase);
 
-    // Nomes dos clientes HTTP nomeados registrados no MauiProgram.cs
     internal const string TenMlClientName = "10ML";
     internal const string MyMemoryClientName = "MyMemory";
-    internal const string WikipediaClientName = "Wikipedia";
 
     public ApisExtrasService(IHttpClientFactory httpFactory)
     {
         _httpFactory = httpFactory;
     }
-
-    // ──────────────────────────────────────────────
-    //  RECURSO 1 — Bandeiras (FlagCDN) — sem HTTP
-    // ──────────────────────────────────────────────
 
     public string GetCountryFlagUrl(string countryCode)
     {
@@ -53,10 +39,6 @@ public sealed class ApisExtrasService : IApisExtrasService
             if (c is < 'a' or > 'z') return false;
         return true;
     }
-
-    // ──────────────────────────────────────────────────
-    //  RECURSO 2 — 10ML Fragrance Index (API pública)
-    // ──────────────────────────────────────────────────
 
     public async Task<EnrichedPerfumeData> GetEnrichedDataAsync(string perfumeName, string house, CancellationToken ct = default)
     {
@@ -92,7 +74,6 @@ public sealed class ApisExtrasService : IApisExtrasService
 
     private static string BuildSearchQuery(string name, string house)
     {
-        // Remove variações comerciais para focar na essência do nome
         var cleanName = RemoveConcentrationSuffix(name);
         return string.IsNullOrWhiteSpace(house)
             ? cleanName
@@ -146,7 +127,6 @@ public sealed class ApisExtrasService : IApisExtrasService
     {
         double score = 0;
 
-        // Pontuação por marca (peso alto: evita misturar perfumes de marcas diferentes)
         if (!string.IsNullOrEmpty(targetHouse) && !string.IsNullOrEmpty(candidateHouse))
         {
             if (candidateHouse == targetHouse)
@@ -154,10 +134,9 @@ public sealed class ApisExtrasService : IApisExtrasService
             else if (candidateHouse.Contains(targetHouse) || targetHouse.Contains(candidateHouse))
                 score += 0.25;
             else
-                return 0; // Marca diferente: descarta a correspondência
+                return 0;
         }
 
-        // Pontuação por nome do perfume
         var cleanTarget = RemoveConcentrationSuffix(targetName).Trim();
         var cleanCandidate = RemoveConcentrationSuffix(candidateName).Trim();
 
@@ -167,7 +146,6 @@ public sealed class ApisExtrasService : IApisExtrasService
             score += 0.4;
         else
         {
-            // Comparação por palavras: quantas palavras do alvo aparecem no candidato
             var targetWords = cleanTarget.Split(' ', StringSplitOptions.RemoveEmptyEntries);
             var candidateWords = new HashSet<string>(
                 cleanCandidate.Split(' ', StringSplitOptions.RemoveEmptyEntries),
@@ -249,7 +227,6 @@ public sealed class ApisExtrasService : IApisExtrasService
         if (string.IsNullOrWhiteSpace(input))
             return string.Empty;
 
-        // Remove acentos
         var normalized = input.Normalize(NormalizationForm.FormD);
         var sb = new StringBuilder(normalized.Length);
         foreach (var c in normalized)
@@ -259,7 +236,6 @@ public sealed class ApisExtrasService : IApisExtrasService
                 sb.Append(char.ToLowerInvariant(c));
         }
 
-        // Remove pontuação e espaços extras
         var result = sb.ToString();
         result = string.Join(' ', result.Split(default(char[]), StringSplitOptions.RemoveEmptyEntries));
         return result;
@@ -271,10 +247,6 @@ public sealed class ApisExtrasService : IApisExtrasService
         return data;
     }
 
-    // ─────────────────────────────────────────────────
-    //  RECURSO 3 — Tradução (MyMemory Translation API)
-    // ─────────────────────────────────────────────────
-
     private const int MaxTranslationLength = 500;
 
     public async Task<string> TranslateToPortugueseAsync(string text, CancellationToken ct = default)
@@ -284,11 +256,9 @@ public sealed class ApisExtrasService : IApisExtrasService
 
         var trimmed = text.Trim();
 
-        // Cache
         if (_translationCache.TryGetValue(trimmed, out var cached))
             return cached;
 
-        // Limitar tamanho
         var toTranslate = trimmed.Length > MaxTranslationLength
             ? trimmed[..MaxTranslationLength]
             : trimmed;
@@ -312,7 +282,6 @@ public sealed class ApisExtrasService : IApisExtrasService
             if (string.IsNullOrWhiteSpace(translated))
                 return CacheTranslation(trimmed, trimmed);
 
-            // Se o texto foi truncado, o usuário vê a tradução parcial com o sufixo indicando incompletude
             var result = trimmed.Length > MaxTranslationLength
                 ? translated + "…"
                 : translated;
@@ -330,11 +299,9 @@ public sealed class ApisExtrasService : IApisExtrasService
         if (!root.TryGetProperty("responseStatus", out var status))
             return null;
 
-        // Status 200 = OK; 429 = limite atingido; outros = erro
         if (status.ValueKind == JsonValueKind.Number && status.GetInt32() != 200)
             return null;
 
-        // Aceita status como string "200" também
         if (status.ValueKind == JsonValueKind.String &&
             status.GetString() != "200")
             return null;
@@ -349,91 +316,4 @@ public sealed class ApisExtrasService : IApisExtrasService
         return value;
     }
 
-    // ──────────────────────────────────────────────────────
-    //  RECURSO 4 — Imagens das notas olfativas (Wikipedia)
-    // ──────────────────────────────────────────────────────
-
-    public async Task<string> GetNoteImageUrlAsync(string noteName, CancellationToken ct = default)
-    {
-        if (string.IsNullOrWhiteSpace(noteName))
-            return string.Empty;
-
-        var trimmed = noteName.Trim();
-
-        if (_noteImageCache.TryGetValue(trimmed, out var cached))
-            return cached;
-
-        try
-        {
-            var http = _httpFactory.CreateClient(WikipediaClientName);
-            var encoded = Uri.EscapeDataString(trimmed);
-            var url = $"w/api.php?action=query&generator=search&gsrsearch={encoded}" +
-                      "&gsrlimit=1&prop=pageimages&format=json&pithumbsize=300";
-
-            using var response = await http.GetAsync(url, ct);
-
-            if (!response.IsSuccessStatusCode)
-                return CacheNoteImage(trimmed, string.Empty);
-
-            await using var stream = await response.Content.ReadAsStreamAsync(ct);
-            using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: ct);
-
-            var imageUrl = ExtractWikipediaImage(doc.RootElement, trimmed);
-            return CacheNoteImage(trimmed, imageUrl);
-        }
-        catch (Exception) when (!ct.IsCancellationRequested)
-        {
-            return CacheNoteImage(trimmed, string.Empty);
-        }
-    }
-
-    private static string ExtractWikipediaImage(JsonElement root, string searchTerm)
-    {
-        // Estrutura: { query: { pages: { "12345": { title: "...", thumbnail: { source: "..." } } } } }
-        var pages = root.Child("query")?.Child("pages");
-        if (pages is not { ValueKind: JsonValueKind.Object } pagesObj)
-            return string.Empty;
-
-        foreach (var page in pagesObj.EnumerateObject())
-        {
-            var pageElement = page.Value;
-            var title = pageElement.Str("title") ?? "";
-
-            // Validação de relevância: o título da página deve ter relação com a nota
-            if (!IsRelevantWikipediaResult(title, searchTerm))
-                continue;
-
-            var imageUrl = pageElement.Child("thumbnail")?.Str("source");
-            if (!string.IsNullOrWhiteSpace(imageUrl))
-                return imageUrl;
-        }
-
-        return string.Empty;
-    }
-
-    private static bool IsRelevantWikipediaResult(string pageTitle, string searchTerm)
-    {
-        var normalizedTitle = pageTitle.ToLowerInvariant();
-        var normalizedSearch = searchTerm.ToLowerInvariant();
-
-        // Aceita correspondência direta
-        if (normalizedTitle.Contains(normalizedSearch))
-            return true;
-
-        // Aceita quando qualquer palavra significativa do termo aparece no título
-        var words = normalizedSearch.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        if (words.Length > 0)
-        {
-            var matchingWords = words.Count(w => normalizedTitle.Contains(w));
-            return matchingWords > 0 && matchingWords >= (words.Length + 1) / 2;
-        }
-
-        return false;
-    }
-
-    private string CacheNoteImage(string key, string value)
-    {
-        _noteImageCache.TryAdd(key, value);
-        return value;
-    }
 }

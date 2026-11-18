@@ -6,18 +6,15 @@
     <Application.Resources>
         <ResourceDictionary>
 
-            <!-- Conversores de valor -->
             <conv:StringToBoolConverter x:Key="StringToBoolConverter" />
             <conv:IntToBoolConverter x:Key="IntToBoolConverter" />
 
-            <!-- Paleta base (o clima muda o resto em tempo real) -->
             <Color x:Key="Ink">#07070D</Color>
             <Color x:Key="GlassColor">#14FFFFFF</Color>
             <Color x:Key="GlassStroke">#2EFFFFFF</Color>
             <Color x:Key="TextMuted">#B8B5C8</Color>
             <Color x:Key="Accent">#E8D5A8</Color>
 
-            <!-- Tipografia -->
             <Style x:Key="Display" TargetType="Label">
                 <Setter Property="FontFamily" Value="OpenSansSemibold" />
                 <Setter Property="FontSize" Value="92" />
@@ -54,7 +51,6 @@
                 <Setter Property="TextColor" Value="{StaticResource TextMuted}" />
             </Style>
 
-            <!-- Vidro (glassmorphism) -->
             <Style x:Key="Glass" TargetType="Border">
                 <Setter Property="BackgroundColor" Value="{StaticResource GlassColor}" />
                 <Setter Property="Stroke" Value="{StaticResource GlassStroke}" />

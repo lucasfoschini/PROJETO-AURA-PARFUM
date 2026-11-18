@@ -2,7 +2,6 @@ using Microsoft.Maui.Controls.Shapes;
 
 namespace AuraScent.Controls;
 
-/// <summary>Botão de menu desenhado em código (3 barras) que abre o Flyout.</summary>
 public class MenuButton : ContentView
 {
     public MenuButton()
@@ -19,11 +18,11 @@ public class MenuButton : ContentView
 
         Content = new Border
         {
-            WidthRequest = 46, HeightRequest = 46,
+            WidthRequest = 48, HeightRequest = 48,
             StrokeThickness = 1,
-            Stroke = Color.FromArgb("#33FFFFFF"),
+            Stroke = Color.FromArgb("#55E8D5A8"),
             BackgroundColor = Color.FromArgb("#14FFFFFF"),
-            StrokeShape = new RoundRectangle { CornerRadius = 23 },
+            StrokeShape = new RoundRectangle { CornerRadius = 24 },
             Content = bars
         };
 

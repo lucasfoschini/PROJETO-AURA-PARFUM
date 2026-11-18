@@ -6,7 +6,6 @@ using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace AuraScent.Services;
 
-/// <summary>Estado global observável: a atmosfera atual pinta todas as telas.</summary>
 public sealed partial class AtmosphereState : ObservableObject
 {
     [ObservableProperty] private Atmosphere _current = AtmosphereCatalog.Default;
@@ -48,9 +47,6 @@ public sealed class ShellNavigationService : INavigationService
 {
     public Task OpenDetailAsync(PerfumeSummary perfume) =>
         Shell.Current.GoToAsync(nameof(DetailPage), new ShellNavigationQueryParameters { { "Perfume", perfume } });
-
-    public Task OpenRitualAsync(PerfumeDetail detail) =>
-        Shell.Current.GoToAsync(nameof(ImmersivePage), new ShellNavigationQueryParameters { { "Detail", detail } });
 
     public Task CloseAsync() => Shell.Current.GoToAsync("..");
 }

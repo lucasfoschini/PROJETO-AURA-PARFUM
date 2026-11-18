@@ -2,7 +2,6 @@ using AuraScent.Models;
 
 namespace AuraScent.Controls;
 
-/// <summary>Cor e formato do frasco, deduzidos da família olfativa (sem depender de imagem de API).</summary>
 public static class BottleStyle
 {
     private static readonly (string Word, string Hex)[] Palette =
@@ -23,7 +22,6 @@ public static class BottleStyle
 
     public static int VariantFor(PerfumeSummary p) => StableHash(p.Name) % 3;
 
-    // string.GetHashCode() muda a cada execução no .NET; este é estável.
     private static int StableHash(string s)
     {
         uint h = 17;
@@ -59,20 +57,16 @@ public sealed class BottleDrawable : IDrawable
         var bodyY = neckY + neckH;
         var bottom = bodyY + bh;
 
-        // sombra
         canvas.FillColor = Colors.Black.WithAlpha(0.28f);
         canvas.FillEllipse(x - bw * 0.05f, bottom - unit * 0.015f, bw * 1.1f, unit * 0.07f);
 
-        // gargalo
         canvas.FillColor = Colors.White.WithAlpha(0.18f);
         canvas.FillRectangle(x + bw * 0.37f, neckY - 1, bw * 0.26f, neckH + 2);
 
-        // corpo de vidro
         var body = BodyPath(x, bodyY, bw, bh);
         canvas.FillColor = Colors.White.WithAlpha(0.08f);
         canvas.FillPath(body);
 
-        // líquido com onda suave, recortado pelo corpo
         canvas.SaveState();
         canvas.ClipPath(body);
         var level = bodyY + bh * 0.38f;
@@ -95,14 +89,12 @@ public sealed class BottleDrawable : IDrawable
         canvas.FillPath(wave);
         canvas.RestoreState();
 
-        // contorno + reflexo
         canvas.StrokeColor = Colors.White.WithAlpha(0.55f);
         canvas.StrokeSize = 1.5f;
         canvas.DrawPath(body);
         canvas.FillColor = Colors.White.WithAlpha(0.28f);
         canvas.FillRoundedRectangle(x + bw * 0.14f, bodyY + bh * 0.12f, bw * 0.08f, bh * 0.5f, bw * 0.04f);
 
-        // tampa dourada
         var capW = bw * 0.42f;
         var capX = x + (bw - capW) / 2f;
         canvas.SetFillPaint(new LinearGradientPaint
@@ -124,7 +116,6 @@ public sealed class BottleDrawable : IDrawable
     }
 }
 
-/// <summary>Frasco desenhado em código. Perfume define cor/formato; AnimateLiquid faz o líquido ondular.</summary>
 public sealed class BottleView : GraphicsView
 {
     public static readonly BindableProperty PerfumeProperty = BindableProperty.Create(
@@ -151,7 +142,7 @@ public sealed class BottleView : GraphicsView
     public BottleView()
     {
         Drawable = _drawable;
-        InputTransparent = true; // toques passam para o cartão
+        InputTransparent = true;
     }
 
     private void Update(PerfumeSummary? p)

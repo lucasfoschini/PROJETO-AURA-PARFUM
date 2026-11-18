@@ -31,10 +31,16 @@
                                                 Command="{Binding Source={RelativeSource AncestorType={x:Type vm:HomeViewModel}}, Path=SelectCityCommand}"
                                                 CommandParameter="{Binding .}" />
                                         </Border.GestureRecognizers>
-                                        <VerticalStackLayout Spacing="2">
-                                            <Label Text="{Binding Name}" TextColor="White" />
-                                            <Label Text="{Binding SecondaryText}" Style="{StaticResource Caption}" />
-                                        </VerticalStackLayout>
+                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                            <VerticalStackLayout Spacing="2">
+                                                <Label Text="{Binding Name}" TextColor="White" />
+                                                <Label Text="{Binding SecondaryText}" Style="{StaticResource Caption}" />
+                                            </VerticalStackLayout>
+                                            <Image Grid.Column="1" Source="{Binding FlagUrl}"
+                                                   HeightRequest="20" WidthRequest="30" Aspect="AspectFit"
+                                                   VerticalOptions="Center" HorizontalOptions="End"
+                                                   IsVisible="{Binding FlagUrl, Converter={StaticResource StringToBoolConverter}}" />
+                                        </Grid>
                                     </Border>
                                 </DataTemplate>
                             </BindableLayout.ItemTemplate>

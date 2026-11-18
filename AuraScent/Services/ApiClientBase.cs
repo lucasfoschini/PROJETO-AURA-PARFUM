@@ -9,10 +9,6 @@ public sealed class ApiException : Exception
         => Service = service;
 }
 
-/// <summary>
-/// Classe base abstrata dos clientes de API: encapsula HttpClient, JSON e tratamento
-/// de erros. Cada API concreta herda e só implementa o que é específico dela.
-/// </summary>
 public abstract class ApiClientBase
 {
     protected HttpClient Http { get; }

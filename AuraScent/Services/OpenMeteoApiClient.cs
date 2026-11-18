@@ -2,7 +2,6 @@ using AuraScent.Models;
 
 namespace AuraScent.Services;
 
-/// <summary>Open-Meteo: geocodificação + clima atual. Gratuita e sem chave.</summary>
 public sealed class OpenMeteoApiClient : ApiClientBase, IWeatherService
 {
     protected override string ServiceName => "Open-Meteo";

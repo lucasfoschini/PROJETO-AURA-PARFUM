@@ -6,6 +6,21 @@ using CommunityToolkit.Mvvm.Input;
 
 namespace AuraScent.ViewModels;
 
+public sealed partial class NoteItemViewModel : ObservableObject
+{
+    public string OriginalName { get; }
+
+    [ObservableProperty] private string _name;
+
+    public NoteItemViewModel(string originalName, string translatedName)
+    {
+        OriginalName = originalName;
+        _name = translatedName;
+    }
+}
+
+public sealed record NoteLayerDisplay(string Name, IReadOnlyList<NoteItemViewModel> Notes);
+
 public partial class DetailViewModel : BaseViewModel, IQueryAttributable
 {
     private readonly IPerfumeService _perfumes;
@@ -13,8 +28,7 @@ public partial class DetailViewModel : BaseViewModel, IQueryAttributable
     private readonly IApisExtrasService _extras;
     private PerfumeDetail? _detail;
 
-    public ObservableCollection<NoteLayer> Layers { get; } = new();
-    public ObservableCollection<NoteWithImage> NoteImages { get; } = new();
+    public ObservableCollection<NoteLayerDisplay> Layers { get; } = new();
 
     [ObservableProperty] private PerfumeSummary? _summary;
     [ObservableProperty] private string _lede = "";
@@ -27,7 +41,6 @@ public partial class DetailViewModel : BaseViewModel, IQueryAttributable
     [ObservableProperty] private string _accordsText = "";
     [ObservableProperty] private string _perfumersText = "";
     [ObservableProperty] private string _seasonsText = "";
-    [ObservableProperty] private string _occasionsText = "";
     [ObservableProperty] private string _longevityText = "";
     [ObservableProperty] private string _projectionText = "";
     [ObservableProperty] private string _tenMlUrl = "";
@@ -65,12 +78,24 @@ public partial class DetailViewModel : BaseViewModel, IQueryAttributable
         {
             _detail = await _perfumes.GetDetailAsync(Summary);
             Lede = _detail.Lede;
-            Layers.Clear();
-            foreach (var layer in _detail.Layers) Layers.Add(layer);
 
-            // Iniciar enriquecimento complementar em paralelo (não bloqueia a tela)
+            SetLayers(_detail.Layers);
+
             _ = EnrichAsync();
         });
+    }
+
+    private void SetLayers(IEnumerable<NoteLayer> rawLayers)
+    {
+        var displayLayers = rawLayers
+            .Where(l => l.Notes.Count > 0)
+            .Select(l => new NoteLayerDisplay(
+                l.Name,
+                l.Notes.Select(n => new NoteItemViewModel(n, NoteTranslator.Translate(n))).ToList()))
+            .ToList();
+
+        Layers.Clear();
+        foreach (var layer in displayLayers) Layers.Add(layer);
     }
 
     private async Task EnrichAsync()
@@ -80,16 +105,24 @@ public partial class DetailViewModel : BaseViewModel, IQueryAttributable
 
         try
         {
-            // Executar todas as consultas complementares em paralelo
+            var hadInitialLayers = Layers.Count > 0;
             var translateTask = TranslateLedeAsync();
             var enrichTask = LoadEnrichedDataAsync();
-            var noteImagesTask = LoadNoteImagesAsync();
 
-            await Task.WhenAll(translateTask, enrichTask, noteImagesTask);
+            if (hadInitialLayers)
+            {
+                await Task.WhenAll(translateTask, enrichTask, TranslateUnknownNotesAsync());
+            }
+            else
+            {
+                await Task.WhenAll(translateTask, enrichTask);
+
+                if (Layers.Count > 0)
+                    await TranslateUnknownNotesAsync();
+            }
         }
         catch (Exception)
         {
-            // Falhas do enriquecimento não devem afetar a tela
         }
         finally
         {
@@ -104,13 +137,11 @@ public partial class DetailViewModel : BaseViewModel, IQueryAttributable
         try
         {
             var translated = await _extras.TranslateToPortugueseAsync(Lede);
-            // Só atualiza se realmente traduziu (diferente do original)
             if (!string.Equals(translated, Lede, StringComparison.Ordinal))
                 TranslatedLede = translated;
         }
         catch (Exception)
         {
-            // Mantém o texto original
         }
     }
 
@@ -121,13 +152,12 @@ public partial class DetailViewModel : BaseViewModel, IQueryAttributable
         try
         {
             var data = await _extras.GetEnrichedDataAsync(Summary.Name, Summary.House);
-            if (string.IsNullOrEmpty(data.Name)) return; // Não encontrou
+            if (string.IsNullOrEmpty(data.Name)) return;
 
             HasEnrichedData = true;
 
             if (!string.IsNullOrWhiteSpace(data.Character))
             {
-                // Traduzir o "character" da 10ML
                 var translatedChar = await _extras.TranslateToPortugueseAsync(data.Character);
                 EnrichedCharacter = translatedChar;
             }
@@ -138,7 +168,7 @@ public partial class DetailViewModel : BaseViewModel, IQueryAttributable
             TenMlUrl = data.TenMlUrl ?? "";
 
             if (data.Accords.Count > 0)
-                AccordsText = string.Join("  ·  ", data.Accords);
+                AccordsText = string.Join("  ·  ", data.Accords.Select(NoteTranslator.Translate));
 
             if (data.Perfumers.Count > 0)
                 PerfumersText = string.Join(", ", data.Perfumers);
@@ -146,65 +176,62 @@ public partial class DetailViewModel : BaseViewModel, IQueryAttributable
             if (data.Seasons.Count > 0)
                 SeasonsText = string.Join("  ·  ", data.Seasons.Select(TranslateSeason));
 
-            if (data.Occasions.Count > 0)
-                OccasionsText = string.Join("  ·  ", data.Occasions.Select(TranslateOccasion));
+            LongevityText = data.Longevity.HasValue ? FormatRating(data.Longevity.Value) : "";
+            ProjectionText = data.Projection.HasValue ? FormatRating(data.Projection.Value) : "";
 
-            LongevityText = data.Longevity.HasValue ? FormatRating(data.Longevity.Value, "Longevidade") : "";
-            ProjectionText = data.Projection.HasValue ? FormatRating(data.Projection.Value, "Projeção") : "";
-
-            // Se a 10ML tem pirâmide mais detalhada e a Scento não tem, complementa
             if (Layers.Count == 0 && data.HasPyramid)
             {
+                var extra = new List<NoteLayer>();
                 if (data.TopNotes.Count > 0)
-                    Layers.Add(new NoteLayer("Notas de topo", data.TopNotes));
+                    extra.Add(new NoteLayer("Notas de topo", data.TopNotes));
                 if (data.HeartNotes.Count > 0)
-                    Layers.Add(new NoteLayer("Notas de coração", data.HeartNotes));
+                    extra.Add(new NoteLayer("Notas de coração", data.HeartNotes));
                 if (data.BaseNotes.Count > 0)
-                    Layers.Add(new NoteLayer("Notas de fundo", data.BaseNotes));
+                    extra.Add(new NoteLayer("Notas de fundo", data.BaseNotes));
+
+                await MainThread.InvokeOnMainThreadAsync(() => SetLayers(extra));
             }
         }
         catch (Exception)
         {
-            // Dados da Scento permanecem como estão
         }
     }
 
-    private async Task LoadNoteImagesAsync()
+    private async Task TranslateUnknownNotesAsync()
     {
-        // Coleta todas as notas de todas as camadas
-        var allNotes = Layers.SelectMany(l => l.Notes).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
-        if (allNotes.Count == 0) return;
+        var unknownGroups = Layers
+            .SelectMany(l => l.Notes)
+            .Where(n => NoteTranslator.TryTranslate(n.OriginalName) is null)
+            .GroupBy(n => n.OriginalName, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (unknownGroups.Count == 0) return;
 
         try
         {
-            // Consultar as imagens em paralelo (máximo 10 simultâneas)
-            var semaphore = new SemaphoreSlim(10, 10);
-            var tasks = allNotes.Select(async note =>
+            using var semaphore = new SemaphoreSlim(4, 4);
+            await Task.WhenAll(unknownGroups.Select(async group =>
             {
                 await semaphore.WaitAsync();
                 try
                 {
-                    var imageUrl = await _extras.GetNoteImageUrlAsync(note);
-                    return new NoteWithImage(note, imageUrl);
+                    var pt = await _extras.TranslateToPortugueseAsync(group.Key);
+                    if (!string.IsNullOrWhiteSpace(pt))
+                    {
+                        var formatted = NoteTranslator.Capitalize(pt.Trim());
+                        MainThread.BeginInvokeOnMainThread(() =>
+                        {
+                            foreach (var item in group)
+                                item.Name = formatted;
+                        });
+                    }
                 }
-                finally
-                {
-                    semaphore.Release();
-                }
-            });
-
-            var results = await Task.WhenAll(tasks);
-
-            NoteImages.Clear();
-            foreach (var item in results)
-            {
-                if (!string.IsNullOrEmpty(item.ImageUrl))
-                    NoteImages.Add(item);
-            }
+                catch (Exception) { }
+                finally { semaphore.Release(); }
+            }));
         }
         catch (Exception)
         {
-            // Sem imagens de notas não é erro crítico
         }
     }
 
@@ -225,26 +252,12 @@ public partial class DetailViewModel : BaseViewModel, IQueryAttributable
         _ => season
     };
 
-    private static string TranslateOccasion(string occasion) => occasion.ToLowerInvariant() switch
-    {
-        "evening" => "Noite",
-        "date night" => "Encontro",
-        "office" => "Escritório",
-        "daily" or "everyday" => "Dia a dia",
-        "sport" or "gym" => "Esporte",
-        "casual" => "Casual",
-        "formal" => "Formal",
-        "outdoor" or "outdoors" => "Ar livre",
-        _ => occasion
-    };
-
-    private static string FormatRating(int value, string label)
+    private static string FormatRating(int value)
     {
         var stars = new string('★', Math.Min(value, 5)) + new string('☆', Math.Max(0, 5 - value));
-        return $"{label}: {stars}";
+        return stars;
     }
 
-    // Carrega bandeira do país quando o snapshot do clima está disponível
     public void SetCountryFlag(string countryCode)
     {
         CountryFlagUrl = _extras.GetCountryFlagUrl(countryCode);
@@ -256,14 +269,6 @@ public partial class DetailViewModel : BaseViewModel, IQueryAttributable
     private void ToggleFavorite()
     {
         if (Summary is not null) IsFavorite = _favorites.Toggle(Summary);
-    }
-
-    [RelayCommand]
-    private Task EnterRitualAsync()
-    {
-        if (Summary is null) return Task.CompletedTask;
-        var detail = _detail ?? new PerfumeDetail(Summary, "", Array.Empty<NoteLayer>(), null);
-        return Navigation.OpenRitualAsync(detail);
     }
 
     [RelayCommand]

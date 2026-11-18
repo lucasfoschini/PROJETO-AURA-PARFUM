@@ -34,7 +34,6 @@ public partial class HomeViewModel : BaseViewModel
         _extras = extras;
     }
 
-    /// <summary>Código do país da cidade atual (para uso pelo DetailViewModel).</summary>
     public string CurrentCountryCode => _currentCountryCode;
 
     partial void OnCityChanged(string value)
@@ -105,7 +104,6 @@ public partial class HomeViewModel : BaseViewModel
             TemperatureText = $"{Math.Round(result.Weather.TemperatureC)}°";
             WeatherSummary = $"{result.Weather.Description} · {result.Weather.City}";
 
-            // Atualizar bandeira do país
             _currentCountryCode = result.Weather.CountryCode;
             CountryFlagUrl = _extras.GetCountryFlagUrl(_currentCountryCode);
 

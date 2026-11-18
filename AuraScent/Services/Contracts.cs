@@ -19,13 +19,11 @@ public interface IFavoritesService
 {
     IReadOnlyList<PerfumeSummary> GetAll();
     bool IsFavorite(PerfumeSummary perfume);
-    /// <returns>true se ficou favorito, false se foi removido.</returns>
     bool Toggle(PerfumeSummary perfume);
 }
 
 public interface INavigationService
 {
     Task OpenDetailAsync(PerfumeSummary perfume);
-    Task OpenRitualAsync(PerfumeDetail detail);
     Task CloseAsync();
 }

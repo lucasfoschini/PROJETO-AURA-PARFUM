@@ -3,10 +3,6 @@ using Microsoft.Maui.Controls.Shapes;
 
 namespace AuraScent.Controls;
 
-/// <summary>
-/// Fundo vivo: gradiente do clima + orbes de luz que derivam lentamente.
-/// Troca de cor com cross-fade quando a Atmosphere muda.
-/// </summary>
 public class AuroraBackground : ContentView
 {
     public static readonly BindableProperty AtmosphereProperty = BindableProperty.Create(
@@ -115,6 +111,6 @@ public class AuroraBackground : ContentView
                     orb.ScaleTo(scale, duration, Easing.SinInOut));
             }
         }
-        catch (Exception) { /* view foi destruída durante a animação */ }
+        catch (Exception) {}
     }
 }

@@ -3,26 +3,17 @@ using AuraScent.Services;
 
 namespace AuraScent.Tests;
 
-/// <summary>
-/// Testes unitários para o ApisExtrasService.
-/// Para executar, crie um projeto de teste (xUnit) referenciando o projeto AuraScent.
-/// dotnet new xunit -n AuraScent.Tests
-/// dotnet add AuraScent.Tests reference AuraScent/AuraScent.csproj
-/// </summary>
 public class ApisExtrasServiceTests
 {
-    // ══════════════════════════════════════════════
-    //  TESTE 1: Código de país inválido
-    // ══════════════════════════════════════════════
 
     [Theory]
     [InlineData("")]
     [InlineData("   ")]
     [InlineData(null)]
-    [InlineData("BRA")]        // 3 letras
-    [InlineData("B")]          // 1 letra
-    [InlineData("12")]         // dígitos
-    [InlineData("B!")]         // caractere especial
+    [InlineData("BRA")]
+    [InlineData("B")]
+    [InlineData("12")]
+    [InlineData("B!")]
     public void GetCountryFlagUrl_InvalidCode_ReturnsEmpty(string? code)
     {
         var service = CreateService();
@@ -43,10 +34,6 @@ public class ApisExtrasServiceTests
         Assert.Equal(expectedUrl, result);
     }
 
-    // ══════════════════════════════════════════════
-    //  TESTE 2: Perfume não encontrado na 10ML
-    // ══════════════════════════════════════════════
-
     [Fact]
     public async Task GetEnrichedDataAsync_EmptyName_ReturnsEmpty()
     {
@@ -58,15 +45,10 @@ public class ApisExtrasServiceTests
     [Fact]
     public async Task GetEnrichedDataAsync_ApiUnavailable_ReturnsEmpty()
     {
-        // Com um HttpClientFactory que retorna erros, o serviço não deve lançar exceções
         var service = CreateServiceWithFailingHttp();
         var result = await service.GetEnrichedDataAsync("Sauvage", "Dior");
         Assert.Equal(string.Empty, result.Name);
     }
-
-    // ══════════════════════════════════════════════
-    //  TESTE 3: Falha na tradução
-    // ══════════════════════════════════════════════
 
     [Fact]
     public async Task TranslateToPortugueseAsync_EmptyText_ReturnsEmpty()
@@ -93,51 +75,13 @@ public class ApisExtrasServiceTests
         Assert.Equal(originalText, result);
     }
 
-    // ══════════════════════════════════════════════
-    //  TESTE 4: Texto acima de 500 caracteres
-    // ══════════════════════════════════════════════
-
     [Fact]
     public async Task TranslateToPortugueseAsync_TextOver500Chars_TruncatesBeforeTranslation()
     {
-        // Apenas verifica que não lança exceção com texto longo
         var service = CreateServiceWithFailingHttp();
         var longText = new string('A', 600);
         var result = await service.TranslateToPortugueseAsync(longText);
-        // Com API falhando, retorna o original (truncado internamente, mas resultado = original)
         Assert.Equal(longText, result);
-    }
-
-    // ══════════════════════════════════════════════
-    //  TESTE 5: Nota sem imagem na Wikipédia
-    // ══════════════════════════════════════════════
-
-    [Fact]
-    public async Task GetNoteImageUrlAsync_EmptyNote_ReturnsEmpty()
-    {
-        var service = CreateService();
-        var result = await service.GetNoteImageUrlAsync("");
-        Assert.Equal(string.Empty, result);
-    }
-
-    [Fact]
-    public async Task GetNoteImageUrlAsync_NullNote_ReturnsEmpty()
-    {
-        var service = CreateService();
-        var result = await service.GetNoteImageUrlAsync(null!);
-        Assert.Equal(string.Empty, result);
-    }
-
-    // ══════════════════════════════════════════════
-    //  TESTE 6: Falha de conexão
-    // ══════════════════════════════════════════════
-
-    [Fact]
-    public async Task GetNoteImageUrlAsync_ApiFailure_ReturnsEmpty()
-    {
-        var service = CreateServiceWithFailingHttp();
-        var result = await service.GetNoteImageUrlAsync("Bergamot");
-        Assert.Equal(string.Empty, result);
     }
 
     [Fact]
@@ -149,39 +93,23 @@ public class ApisExtrasServiceTests
         Assert.Null(exception);
     }
 
-    // ══════════════════════════════════════════════
-    //  TESTE 7: Resposta JSON inválida
-    // ══════════════════════════════════════════════
-
     [Fact]
     public async Task TranslateToPortugueseAsync_InvalidJson_ReturnsOriginal()
     {
-        // Com HttpClient retornando HTML em vez de JSON, não deve lançar exceção
         var service = CreateServiceWithInvalidJsonHttp();
         var result = await service.TranslateToPortugueseAsync("Hello world");
         Assert.Equal("Hello world", result);
     }
 
-    // ══════════════════════════════════════════════
-    //  TESTE 8: Fallback para dados da Scento
-    // ══════════════════════════════════════════════
-
     [Fact]
     public async Task Enrichment_FallsBackToScentoData_WhenTenMlUnavailable()
     {
-        // Este teste valida a lógica conceitual: se 10ML retorna Empty,
-        // os dados da Scento permanecem intactos
         var service = CreateServiceWithFailingHttp();
         var enriched = await service.GetEnrichedDataAsync("Nonexistent Perfume", "Unknown Brand");
 
-        // Deve retornar vazio (não substituir dados existentes)
         Assert.Equal(string.Empty, enriched.Name);
         Assert.False(enriched.HasPyramid);
     }
-
-    // ══════════════════════════════════════════════
-    //  TESTE 9: Cache funciona
-    // ══════════════════════════════════════════════
 
     [Fact]
     public void GetCountryFlagUrl_CalledTwice_ReturnsSameResult()
@@ -192,10 +120,6 @@ public class ApisExtrasServiceTests
         Assert.Equal(result1, result2);
     }
 
-    // ══════════════════════════════════════════════
-    //  TESTE 10: CancellationToken respeitado
-    // ══════════════════════════════════════════════
-
     [Fact]
     public async Task TranslateToPortugueseAsync_Cancelled_ThrowsOrReturnsOriginal()
     {
@@ -203,26 +127,18 @@ public class ApisExtrasServiceTests
         using var cts = new CancellationTokenSource();
         cts.Cancel();
 
-        // Com cancelamento, pode lançar OperationCanceledException ou retornar original
         try
         {
             var result = await service.TranslateToPortugueseAsync("Test", cts.Token);
-            // Se não lançou, o texto deve ter sido preservado
             Assert.Equal("Test", result);
         }
         catch (OperationCanceledException)
         {
-            // Esperado
         }
     }
 
-    // ══════════════════════════════════════════════
-    //  HELPERS
-    // ══════════════════════════════════════════════
-
     private static ApisExtrasService CreateService()
     {
-        // Sem chamadas reais: apenas testa lógica local (flag URLs, validações)
         var factory = new FakeHttpClientFactory(new HttpClient(new FakeHandler(System.Net.HttpStatusCode.OK, "{}")));
         return new ApisExtrasService(factory);
     }

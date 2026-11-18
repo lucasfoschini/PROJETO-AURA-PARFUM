@@ -20,26 +20,58 @@
                 </Grid>
 
                 <Label Style="{StaticResource Body}"
-                       Text="Aura cruza duas APIs: o clima da sua cidade (Open-Meteo) escolhe a atmosfera do app, e essa atmosfera guia a curadoria de perfumes da Scento Perfume API." />
+                       Text="Aura cruza o clima da sua cidade com a curadoria de perfumes: o tempo lá fora escolhe a atmosfera do app, e essa atmosfera guia as sugestões do dia." />
 
+                <Label Text="Como funciona" Style="{StaticResource Eyebrow}" Margin="0,8,0,0" />
+                <Border Style="{StaticResource Glass}" Padding="20">
+                    <VerticalStackLayout Spacing="14">
+                        <Label Text="1 · Você escolhe a cidade" Style="{StaticResource Title}" />
+                        <Label Text="Open-Meteo traz temperatura, chuva e dia/noite. A cidade fica só no seu aparelho." Style="{StaticResource Body}" />
+                        <Label Text="2 · O clima define a atmosfera" Style="{StaticResource Title}" />
+                        <Label Text="Cores, movimento e fundo mudam com o tempo. Sol, chuva, noite: cada um com seu clima." Style="{StaticResource Body}" />
+                        <Label Text="3 · Os perfumes combinam" Style="{StaticResource Title}" />
+                        <Label Text="A Scento entrega perfumes, casas e pirâmide olfativa. Você favorita o que gostar." Style="{StaticResource Body}" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <Label Text="De onde vêm os dados" Style="{StaticResource Eyebrow}" Margin="0,8,0,0" />
                 <Border Style="{StaticResource Glass}" Padding="20">
                     <VerticalStackLayout Spacing="6">
-                        <Label Text="API 1 · Scento Perfume" Style="{StaticResource Title}" />
+                        <Label Text="Scento Perfume" Style="{StaticResource Title}" />
                         <Label Text="Busca de perfumes, casas e pirâmide olfativa (topo, coração, fundo)." Style="{StaticResource Body}" />
                     </VerticalStackLayout>
                 </Border>
                 <Border Style="{StaticResource Glass}" Padding="20">
                     <VerticalStackLayout Spacing="6">
-                        <Label Text="API 2 · Open-Meteo" Style="{StaticResource Title}" />
+                        <Label Text="Open-Meteo" Style="{StaticResource Title}" />
                         <Label Text="Geocodificação da cidade e clima atual (temperatura, chuva, dia/noite)." Style="{StaticResource Body}" />
                     </VerticalStackLayout>
                 </Border>
                 <Border Style="{StaticResource Glass}" Padding="20">
                     <VerticalStackLayout Spacing="6">
-                        <Label Text="3 modos de navegação" Style="{StaticResource Title}" />
-                        <Label Text="Abas inferiores (Hoje / Explorar) · menu lateral Flyout · pilha de páginas com modal em tela cheia (Detalhe e Ritual olfativo)." Style="{StaticResource Body}" />
+                        <Label Text="10ML Fragrance Index" Style="{StaticResource Title}" />
+                        <Label Text="Acordes, perfumistas, estações ideais, longevidade e projeção." Style="{StaticResource Body}" />
                     </VerticalStackLayout>
                 </Border>
+                <Border Style="{StaticResource Glass}" Padding="20">
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="MyMemory" Style="{StaticResource Title}" />
+                        <Label Text="Tradução das descrições e das notas para português." Style="{StaticResource Body}" />
+                    </VerticalStackLayout>
+                </Border>
+                <Border Style="{StaticResource Glass}" Padding="20">
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="FlagCDN" Style="{StaticResource Title}" />
+                        <Label Text="Bandeira do país da casa do perfume." Style="{StaticResource Body}" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <Label Text="Privacidade" Style="{StaticResource Eyebrow}" Margin="0,8,0,0" />
+                <Border Style="{StaticResource Glass}" Padding="20">
+                    <Label Style="{StaticResource Body}"
+                           Text="Sem conta e sem servidor próprio. Favoritos e preferências ficam só no seu dispositivo. A cidade é usada apenas para consultar o clima." />
+                </Border>
+
             </VerticalStackLayout>
         </ScrollView>
     </Grid>

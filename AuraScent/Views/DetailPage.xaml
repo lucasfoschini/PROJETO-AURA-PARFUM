@@ -21,7 +21,6 @@
                 <VerticalStackLayout x:Name="HeroBlock" Opacity="0" Spacing="6">
                     <ctl:BottleView Perfume="{Binding Summary}" AnimateLiquid="True" HeightRequest="240" />
 
-                    <!-- Bandeira do país + Casa -->
                     <HorizontalStackLayout Spacing="8" HorizontalOptions="Center">
                         <Image Source="{Binding CountryFlagUrl}" HeightRequest="18" WidthRequest="27"
                                Aspect="AspectFit" IsVisible="{Binding CountryFlagUrl, Converter={StaticResource StringToBoolConverter}}" />
@@ -30,7 +29,6 @@
 
                     <Label Text="{Binding Summary.Name}" Style="{StaticResource Headline}" FontSize="40" />
 
-                    <!-- Concentração e Gênero (dados 10ML) -->
                     <HorizontalStackLayout Spacing="8" HorizontalOptions="Center">
                         <Border Style="{StaticResource Chip}" HorizontalOptions="Start"
                                 IsVisible="{Binding Summary.DisplayFamily, Converter={StaticResource StringToBoolConverter}}">
@@ -46,16 +44,13 @@
                         </Border>
                     </HorizontalStackLayout>
 
-                    <!-- Descrição original (Scento) -->
                     <Label Text="{Binding Lede}" Style="{StaticResource Body}" Margin="0,12,0,0"
                            IsVisible="{Binding Lede, Converter={StaticResource StringToBoolConverter}}" />
 
-                    <!-- Descrição traduzida -->
                     <Label Text="{Binding TranslatedLede}" Style="{StaticResource Body}"
                            TextColor="{StaticResource Accent}" FontAttributes="Italic"
                            IsVisible="{Binding TranslatedLede, Converter={StaticResource StringToBoolConverter}}" />
 
-                    <!-- Descrição enriquecida (10ML character traduzido) -->
                     <Label Text="{Binding EnrichedCharacter}" Style="{StaticResource Body}"
                            Margin="0,4,0,0"
                            IsVisible="{Binding EnrichedCharacter, Converter={StaticResource StringToBoolConverter}}" />
@@ -64,52 +59,31 @@
                 <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" Color="{StaticResource Accent}" HorizontalOptions="Start" />
                 <Label Text="{Binding ErrorMessage}" IsVisible="{Binding HasError}" TextColor="#FF9A9A" />
 
-                <!-- Pirâmide olfativa -->
                 <VerticalStackLayout x:Name="LayersBlock" Opacity="0" Spacing="14"
                                      BindableLayout.ItemsSource="{Binding Layers}">
                     <BindableLayout.ItemTemplate>
-                        <DataTemplate x:DataType="m:NoteLayer">
+                        <DataTemplate x:DataType="vm:NoteLayerDisplay">
                             <Border Style="{StaticResource Glass}" Padding="20">
-                                <VerticalStackLayout Spacing="8">
+                                <VerticalStackLayout Spacing="12">
                                     <Label Text="{Binding Name}" Style="{StaticResource Eyebrow}" />
-                                    <Label Text="{Binding NotesText}" Style="{StaticResource Title}" LineHeight="1.3" />
+                                    <FlexLayout Wrap="Wrap" Direction="Row" JustifyContent="Start" AlignItems="Start"
+                                                BindableLayout.ItemsSource="{Binding Notes}">
+                                        <BindableLayout.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:NoteItemViewModel">
+                                                <Border Style="{StaticResource Chip}" Padding="14,10" Margin="0,0,8,8" MinimumHeightRequest="44">
+                                                    <Label Text="{Binding Name}" TextColor="White" FontSize="14" VerticalOptions="Center" />
+                                                </Border>
+                                            </DataTemplate>
+                                        </BindableLayout.ItemTemplate>
+                                    </FlexLayout>
                                 </VerticalStackLayout>
                             </Border>
                         </DataTemplate>
                     </BindableLayout.ItemTemplate>
                 </VerticalStackLayout>
 
-                <!-- Imagens das notas olfativas -->
-                <VerticalStackLayout Spacing="12"
-                                     IsVisible="{Binding NoteImages.Count, Converter={StaticResource IntToBoolConverter}}">
-                    <Label Text="Notas olfativas" Style="{StaticResource Eyebrow}" />
-                    <CollectionView ItemsSource="{Binding NoteImages}" ItemsLayout="HorizontalList"
-                                    HeightRequest="130" HorizontalScrollBarVisibility="Never">
-                        <CollectionView.ItemTemplate>
-                            <DataTemplate x:DataType="m:NoteWithImage">
-                                <Border Style="{StaticResource Glass}" Padding="8" Margin="0,0,10,0"
-                                        WidthRequest="110" HeightRequest="120">
-                                    <VerticalStackLayout Spacing="6" VerticalOptions="Center">
-                                        <Image Source="{Binding ImageUrl}" HeightRequest="70" WidthRequest="90"
-                                               Aspect="AspectFill">
-                                            <Image.Clip>
-                                                <RoundRectangleGeometry Rect="0,0,90,70" CornerRadius="8" />
-                                            </Image.Clip>
-                                        </Image>
-                                        <Label Text="{Binding Name}" Style="{StaticResource Caption}"
-                                               HorizontalTextAlignment="Center" MaxLines="2"
-                                               LineBreakMode="TailTruncation" />
-                                    </VerticalStackLayout>
-                                </Border>
-                            </DataTemplate>
-                        </CollectionView.ItemTemplate>
-                    </CollectionView>
-                </VerticalStackLayout>
-
-                <!-- Dados enriquecidos da 10ML -->
                 <VerticalStackLayout Spacing="12" IsVisible="{Binding HasEnrichedData}">
 
-                    <!-- Acordes -->
                     <Border Style="{StaticResource Glass}" Padding="20"
                             IsVisible="{Binding AccordsText, Converter={StaticResource StringToBoolConverter}}">
                         <VerticalStackLayout Spacing="6">
@@ -118,7 +92,6 @@
                         </VerticalStackLayout>
                     </Border>
 
-                    <!-- Perfumistas -->
                     <Border Style="{StaticResource Glass}" Padding="20"
                             IsVisible="{Binding PerfumersText, Converter={StaticResource StringToBoolConverter}}">
                         <VerticalStackLayout Spacing="6">
@@ -127,19 +100,17 @@
                         </VerticalStackLayout>
                     </Border>
 
-                    <!-- Longevidade e Projeção -->
                     <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
-                        <Border Style="{StaticResource Glass}" Padding="16"
+                        <Border Style="{StaticResource Glass}" Padding="12,18"
                                 IsVisible="{Binding LongevityText, Converter={StaticResource StringToBoolConverter}}">
-                            <Label Text="{Binding LongevityText}" Style="{StaticResource Caption}" HorizontalTextAlignment="Center" />
+                            <VerticalStackLayout Spacing="6" HorizontalOptions="Center"><Label Text="Longevidade" Style="{StaticResource Eyebrow}" HorizontalTextAlignment="Center" /><Label Text="{Binding LongevityText}" FontSize="26" CharacterSpacing="2" TextColor="{StaticResource Accent}" HorizontalTextAlignment="Center" /></VerticalStackLayout>
                         </Border>
-                        <Border Grid.Column="1" Style="{StaticResource Glass}" Padding="16"
+                        <Border Grid.Column="1" Style="{StaticResource Glass}" Padding="12,18"
                                 IsVisible="{Binding ProjectionText, Converter={StaticResource StringToBoolConverter}}">
-                            <Label Text="{Binding ProjectionText}" Style="{StaticResource Caption}" HorizontalTextAlignment="Center" />
+                            <VerticalStackLayout Spacing="6" HorizontalOptions="Center"><Label Text="Projeção" Style="{StaticResource Eyebrow}" HorizontalTextAlignment="Center" /><Label Text="{Binding ProjectionText}" FontSize="26" CharacterSpacing="2" TextColor="{StaticResource Accent}" HorizontalTextAlignment="Center" /></VerticalStackLayout>
                         </Border>
                     </Grid>
 
-                    <!-- Estações e Ocasiões -->
                     <Border Style="{StaticResource Glass}" Padding="20"
                             IsVisible="{Binding SeasonsText, Converter={StaticResource StringToBoolConverter}}">
                         <VerticalStackLayout Spacing="6">
@@ -147,27 +118,16 @@
                             <Label Text="{Binding SeasonsText}" Style="{StaticResource Title}" />
                         </VerticalStackLayout>
                     </Border>
-
-                    <Border Style="{StaticResource Glass}" Padding="20"
-                            IsVisible="{Binding OccasionsText, Converter={StaticResource StringToBoolConverter}}">
-                        <VerticalStackLayout Spacing="6">
-                            <Label Text="Ocasiões" Style="{StaticResource Eyebrow}" />
-                            <Label Text="{Binding OccasionsText}" Style="{StaticResource Title}" />
-                        </VerticalStackLayout>
-                    </Border>
                 </VerticalStackLayout>
 
-                <!-- Indicador de enriquecimento -->
                 <ActivityIndicator IsRunning="{Binding IsEnriching}" IsVisible="{Binding IsEnriching}"
                                    Color="{StaticResource Accent}" HorizontalOptions="Start"
                                    HeightRequest="24" WidthRequest="24" />
 
-                <!-- Botões de ação -->
                 <VerticalStackLayout Spacing="12">
-                    <Button Text="Entrar no ritual olfativo" Command="{Binding EnterRitualCommand}" Style="{StaticResource PrimaryButton}" />
                     <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
                         <Button Text="{Binding FavoriteLabel}"
-                                Command="{Binding ToggleFavoriteCommand}" Style="{StaticResource PillButton}" />
+                                Command="{Binding ToggleFavoriteCommand}" Style="{StaticResource PrimaryButton}" />
                         <Button Grid.Column="1" Text="Ver no Scento" Command="{Binding OpenScentoCommand}" Style="{StaticResource PillButton}" />
                     </Grid>
                     <Button Text="Ver na 10ML" Command="{Binding OpenTenMlCommand}" Style="{StaticResource PillButton}"

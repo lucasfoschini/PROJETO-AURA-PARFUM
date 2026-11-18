@@ -1,6 +1,5 @@
 namespace AuraScent.Models;
 
-/// <summary>Dados complementares obtidos da 10ML para enriquecer um perfume da Scento.</summary>
 public sealed record EnrichedPerfumeData(
     string Name,
     string House,
@@ -28,5 +27,3 @@ public sealed record EnrichedPerfumeData(
     public bool HasPyramid => TopNotes.Count > 0 || HeartNotes.Count > 0 || BaseNotes.Count > 0;
 }
 
-/// <summary>Uma nota olfativa com sua imagem da Wikipédia.</summary>
-public sealed record NoteWithImage(string Name, string ImageUrl);
