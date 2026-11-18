@@ -44,7 +44,12 @@
                 </Grid>
 
                 <VerticalStackLayout x:Name="HeroBlock" Opacity="0" Spacing="2">
-                    <Label Text="{Binding TemperatureText}" Style="{StaticResource Display}" />
+                    <HorizontalStackLayout Spacing="10">
+                        <Label Text="{Binding TemperatureText}" Style="{StaticResource Display}" />
+                        <Image Source="{Binding CountryFlagUrl}" HeightRequest="28" WidthRequest="42"
+                               Aspect="AspectFit" VerticalOptions="Center"
+                               IsVisible="{Binding CountryFlagUrl, Converter={StaticResource StringToBoolConverter}}" />
+                    </HorizontalStackLayout>
                     <Label Text="{Binding WeatherSummary}" Style="{StaticResource Title}" />
                     <Label Text="{Binding State.Current.Tagline}" Style="{StaticResource Body}" Margin="0,8,0,0" />
                 </VerticalStackLayout>

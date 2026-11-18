@@ -10,6 +10,7 @@ public partial class HomeViewModel : BaseViewModel
 {
     private readonly RecommendationService _recommendations;
     private readonly IWeatherService _weather;
+    private readonly IApisExtrasService _extras;
 
     public ObservableCollection<PerfumeSummary> Recommendations { get; } = new();
     public ObservableCollection<CitySuggestion> CitySuggestions { get; } = new();
@@ -18,17 +19,23 @@ public partial class HomeViewModel : BaseViewModel
     [ObservableProperty] private string _temperatureText = "--°";
     [ObservableProperty] private string _weatherSummary = "Sentindo o clima…";
     [ObservableProperty] private bool _showCitySuggestions;
+    [ObservableProperty] private string _countryFlagUrl = "";
 
     private CancellationTokenSource? _citySearchCts;
     private CitySuggestion? _selectedCity;
     private bool _selectingCity;
+    private string _currentCountryCode = "";
 
-    public HomeViewModel(RecommendationService recommendations, IWeatherService weather, AtmosphereState state, INavigationService navigation)
+    public HomeViewModel(RecommendationService recommendations, IWeatherService weather, AtmosphereState state, INavigationService navigation, IApisExtrasService extras)
         : base(state, navigation)
     {
         _recommendations = recommendations;
         _weather = weather;
+        _extras = extras;
     }
+
+    /// <summary>Código do país da cidade atual (para uso pelo DetailViewModel).</summary>
+    public string CurrentCountryCode => _currentCountryCode;
 
     partial void OnCityChanged(string value)
     {
@@ -97,6 +104,10 @@ public partial class HomeViewModel : BaseViewModel
             State.Current = result.Atmosphere;
             TemperatureText = $"{Math.Round(result.Weather.TemperatureC)}°";
             WeatherSummary = $"{result.Weather.Description} · {result.Weather.City}";
+
+            // Atualizar bandeira do país
+            _currentCountryCode = result.Weather.CountryCode;
+            CountryFlagUrl = _extras.GetCountryFlagUrl(_currentCountryCode);
 
             Recommendations.Clear();
             foreach (var p in result.Perfumes) Recommendations.Add(p);

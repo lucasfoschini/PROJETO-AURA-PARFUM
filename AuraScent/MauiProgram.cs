@@ -36,6 +36,35 @@ public static class MauiProgram
             http.DefaultRequestHeaders.UserAgent.ParseAdd("AuraScent/1.0 (.NET MAUI)");
         });
 
+        // API 3: 10ML Fragrance Index (dados enriquecidos de perfumes, sem chave)
+        s.AddHttpClient(ApisExtrasService.TenMlClientName, http =>
+        {
+            http.BaseAddress = new Uri("https://mcp.10ml.com/api/v1/");
+            http.Timeout = TimeSpan.FromSeconds(12);
+            http.DefaultRequestHeaders.UserAgent.ParseAdd("AuraScent/1.0 (.NET MAUI)");
+            http.DefaultRequestHeaders.Accept.ParseAdd("application/json");
+        });
+
+        // API 4: MyMemory Translation (tradução gratuita inglês → português)
+        s.AddHttpClient(ApisExtrasService.MyMemoryClientName, http =>
+        {
+            http.BaseAddress = new Uri("https://api.mymemory.translated.net/");
+            http.Timeout = TimeSpan.FromSeconds(10);
+            http.DefaultRequestHeaders.UserAgent.ParseAdd("AuraScent/1.0 (.NET MAUI)");
+        });
+
+        // API 5: Wikipedia (imagens das notas olfativas)
+        s.AddHttpClient(ApisExtrasService.WikipediaClientName, http =>
+        {
+            http.BaseAddress = new Uri("https://en.wikipedia.org/");
+            http.Timeout = TimeSpan.FromSeconds(10);
+            // Wikipedia exige User-Agent descritivo
+            http.DefaultRequestHeaders.UserAgent.ParseAdd("AuraScent/1.0 (perfume-discovery-app; contact@aurascent.app)");
+        });
+
+        // Serviço das APIs complementares
+        s.AddSingleton<IApisExtrasService, ApisExtrasService>();
+
         // Serviços de domínio / estado compartilhado
         s.AddSingleton<AtmosphereState>();
         s.AddSingleton<IFavoritesService, PreferencesFavoritesService>();
