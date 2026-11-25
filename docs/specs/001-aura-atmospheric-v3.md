@@ -11,3 +11,5 @@ Os provedores, regras de recomendação, persistência, dependências e alvos at
 ## Ajuste de movimento
 
 Uma consulta de cidade concluída revela clima, atmosfera e curadoria em sequência breve. Explorar sinaliza a chegada dos resultados ou do estado vazio. O detalhe revela frasco e identidade em sequência, com reflexo suave no vidro enquanto a arte está visível. A ação Ver notas dá destaque ao título da pirâmide ao chegar. Os efeitos dispensam animação com a preferência de movimento reduzido e são interrompidos ao sair da tela.
+
+O frasco exibe uma camada de líquido colorido com superfície ondulada no detalhe. O movimento usa o mesmo ciclo do reflexo e pausa quando o frasco sai da área visível. As miniaturas e a versão com movimento reduzido mostram o líquido em repouso.

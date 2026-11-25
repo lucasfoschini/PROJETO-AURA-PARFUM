@@ -32,8 +32,10 @@ public static class BottleStyle
 
 public sealed class BottleDrawable : IDrawable
 {
+    private const float BodyTop = 31;
     private static readonly Color Ink = Color.FromArgb("#101017");
     private static readonly Color Silver = Colors.White.WithAlpha(0.58f);
+    private static readonly Color LiquidEdge = Colors.White.WithAlpha(0.62f);
     private static readonly LinearGradientPaint Shelf = new()
     {
         StartColor = Color.FromArgb("#19171F"),
@@ -61,7 +63,11 @@ public sealed class BottleDrawable : IDrawable
 
     private PerfumeSummary? _perfume;
     private PathF _body = new();
+    private readonly PathF _liquidSurface = new PathF(0, 0).CurveTo(0, 0, 0, 0, 0, 0);
+    private readonly PathF _liquidVolume = new PathF(0, 0).CurveTo(0, 0, 0, 0, 0, 0)
+        .LineTo(0, 0).LineTo(0, 0);
     private Color _liquid = Colors.Transparent;
+    private LinearGradientPaint _liquidPaint = new();
     private LinearGradientPaint _glass = new();
     private RadialGradientPaint _glow = new();
     private float _width;
@@ -69,6 +75,8 @@ public sealed class BottleDrawable : IDrawable
     private float _left;
 
     public float Phase { get; set; }
+
+    public BottleDrawable() => _liquidVolume.Close();
 
     public void SetPerfume(PerfumeSummary? perfume)
     {
@@ -86,8 +94,8 @@ public sealed class BottleDrawable : IDrawable
         }
         else
         {
-            _body.MoveTo(46, 31);
-            _body.LineTo(74, 31);
+            _body.MoveTo(46, BodyTop);
+            _body.LineTo(74, BodyTop);
             _body.LineTo(120 - _left - 6, 43);
             _body.QuadTo(120 - _left, 47, 120 - _left, 54);
             _body.LineTo(120 - _left, _bottom - 9);
@@ -99,6 +107,22 @@ public sealed class BottleDrawable : IDrawable
             _body.Close();
         }
 
+        _liquidVolume.SetPoint(4, _left + _width, _bottom);
+        _liquidVolume.SetPoint(5, _left, _bottom);
+        var hue = _liquid.GetHue();
+        var saturation = _liquid.GetSaturation();
+        var luminosity = _liquid.GetLuminosity();
+        _liquidPaint = new LinearGradientPaint
+        {
+            StartPoint = new Point(0, 0),
+            EndPoint = new Point(0.25, 1),
+            GradientStops = new[]
+            {
+                new PaintGradientStop(0, Color.FromHsla(hue, saturation, Math.Min(0.74f, luminosity * 1.22f)).WithAlpha(0.93f)),
+                new(0.45f, _liquid.WithAlpha(0.84f)),
+                new(1, Color.FromHsla(hue, saturation, luminosity * 0.49f).WithAlpha(0.97f))
+            }
+        };
         _glass = new LinearGradientPaint
         {
             StartPoint = new Point(0, 0),
@@ -106,9 +130,9 @@ public sealed class BottleDrawable : IDrawable
             GradientStops = new[]
             {
                 new PaintGradientStop(0, Silver),
-                new(0.15f, _liquid.WithAlpha(0.9f)),
-                new(0.52f, Color.FromHsla(_liquid.GetHue(), _liquid.GetSaturation(), _liquid.GetLuminosity() * 0.57f)),
-                new(0.83f, _liquid.WithAlpha(0.92f)),
+                new(0.15f, _liquid.WithAlpha(0.44f)),
+                new(0.52f, _liquid.WithAlpha(0.18f)),
+                new(0.83f, _liquid.WithAlpha(0.48f)),
                 new(1, Silver)
             }
         };
@@ -143,18 +167,18 @@ public sealed class BottleDrawable : IDrawable
         canvas.FillColor = _liquid;
         canvas.FillRectangle(50, 23, 20, 13);
 
-        canvas.SetFillPaint(_glass, new RectF(_left, 31, _width, _bottom - 31));
+        canvas.SetFillPaint(_glass, new RectF(_left, BodyTop, _width, _bottom - BodyTop));
         canvas.FillPath(_body);
+        canvas.SaveState();
+        canvas.ClipPath(_body);
+        DrawLiquid(canvas);
         DrawReflection(canvas);
+        canvas.RestoreState();
         canvas.StrokeColor = Silver;
         canvas.StrokeSize = 0.85f;
         canvas.DrawPath(_body);
         canvas.DrawLine(_left + 5, 52, _left + 5, _bottom - 8);
         canvas.DrawLine(_left + 5, _bottom - 6, 115 - _left, _bottom - 6);
-
-        var liquidLevel = 58 + MathF.Sin(Phase) * 2.5f;
-        canvas.StrokeColor = Colors.White.WithAlpha(0.25f);
-        canvas.DrawLine(_left + 6, liquidLevel, 114 - _left, liquidLevel);
 
         var cap = new RectF(46, 6, 28, 21);
         canvas.SetFillPaint(Cap, cap);
@@ -175,19 +199,40 @@ public sealed class BottleDrawable : IDrawable
         canvas.RestoreState();
     }
 
+    private void DrawLiquid(ICanvas canvas)
+    {
+        var level = BodyTop + (_bottom - BodyTop) * 0.37f;
+        var tilt = MathF.Sin(Phase * 2) * 6;
+        var curve = MathF.Sin(Phase * 3) * 10;
+        SetWave(_liquidVolume, level, tilt, curve);
+        SetWave(_liquidSurface, level, tilt, curve);
+
+        const float paintTop = 50;
+        canvas.SetFillPaint(_liquidPaint, new RectF(_left, paintTop, _width, _bottom - paintTop));
+        canvas.FillPath(_liquidVolume);
+        canvas.StrokeColor = LiquidEdge;
+        canvas.StrokeSize = 1.2f;
+        canvas.DrawPath(_liquidSurface);
+    }
+
+    private void SetWave(PathF path, float level, float tilt, float curve)
+    {
+        path.SetPoint(0, _left, level - tilt);
+        path.SetPoint(1, _left + _width * 0.32f, level - tilt + curve);
+        path.SetPoint(2, _left + _width * 0.68f, level + tilt - curve);
+        path.SetPoint(3, _left + _width, level + tilt);
+    }
+
     private void DrawReflection(ICanvas canvas)
     {
         const float beamWidth = 28;
         var progress = (Phase / MathF.Tau - 0.1f) / 0.65f;
         if (progress is <= 0 or >= 1) return;
 
-        var beam = new RectF(_left - beamWidth + (_width + beamWidth) * progress, 31, beamWidth, _bottom - 31);
-        canvas.SaveState();
-        canvas.ClipPath(_body);
+        var beam = new RectF(_left - beamWidth + (_width + beamWidth) * progress, BodyTop, beamWidth, _bottom - BodyTop);
         canvas.Alpha = MathF.Sin(progress * MathF.PI);
         canvas.SetFillPaint(Reflection, beam);
         canvas.FillRectangle(beam);
-        canvas.RestoreState();
     }
 }
 
