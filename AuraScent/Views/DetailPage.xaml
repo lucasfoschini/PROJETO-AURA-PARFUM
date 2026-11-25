@@ -144,7 +144,7 @@
                             IsVisible="{Binding LongevityText, Converter={StaticResource StringToBoolConverter}}">
                         <VerticalStackLayout Spacing="5">
                             <Label Text="Longevidade" Style="{StaticResource Eyebrow}" />
-                            <Label Text="{Binding LongevityText}" TextColor="{DynamicResource Accent}"
+                            <Label Text="{Binding LongevityText}" TextColor="{DynamicResource Accent}" FontSize="26" CharacterSpacing="2"
                                    SemanticProperties.Description="{Binding LongevityDescription}" />
                         </VerticalStackLayout>
                     </Border>
@@ -152,7 +152,7 @@
                             IsVisible="{Binding ProjectionText, Converter={StaticResource StringToBoolConverter}}">
                         <VerticalStackLayout Spacing="5">
                             <Label Text="Projeção" Style="{StaticResource Eyebrow}" />
-                            <Label Text="{Binding ProjectionText}" TextColor="{DynamicResource Accent}"
+                            <Label Text="{Binding ProjectionText}" TextColor="{DynamicResource Accent}" FontSize="26" CharacterSpacing="2"
                                    SemanticProperties.Description="{Binding ProjectionDescription}" />
                         </VerticalStackLayout>
                     </Border>
