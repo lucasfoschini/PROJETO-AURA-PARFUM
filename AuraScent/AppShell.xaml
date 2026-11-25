@@ -1,93 +1,85 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<Shell x:Class="AuraScent.AppShell"
+<Shell x:Class="AuraScent.AppShell" x:Name="ShellRoot"
        xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
        xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
        xmlns:views="clr-namespace:AuraScent.Views"
-       Shell.FlyoutBehavior="Flyout"
-       Shell.NavBarIsVisible="False"
+       xmlns:local="clr-namespace:AuraScent"
+       Shell.FlyoutBehavior="Flyout" Shell.NavBarIsVisible="False"
        Shell.BackgroundColor="{StaticResource Ink}"
-       Shell.TabBarBackgroundColor="#0B0B14" Shell.TabBarForegroundColor="{StaticResource Accent}"
-       Shell.TabBarTitleColor="{StaticResource Accent}"
+       Shell.TabBarBackgroundColor="{StaticResource Surface}"
+       Shell.TabBarForegroundColor="{DynamicResource Accent}"
+       Shell.TabBarTitleColor="{DynamicResource Accent}"
        Shell.TabBarUnselectedColor="{StaticResource TextMuted}"
-       FlyoutBackgroundColor="#0B0B14">
+       FlyoutBackgroundColor="{StaticResource Ink}" FlyoutWidth="276">
 
-    <Shell.Resources>
-        <Style Class="FlyoutItemLabelStyle" TargetType="Label">
-            <Setter Property="TextColor" Value="White" />
-            <Setter Property="FontFamily" Value="OpenSansSemibold" />
-        </Style>
-    </Shell.Resources>
-
-    <Shell.ItemTemplate>
-        <DataTemplate x:DataType="BaseShellItem">
-            <Grid HeightRequest="56" Padding="16,4">
-                <VisualStateManager.VisualStateGroups>
-                    <VisualStateGroupList>
-                        <VisualStateGroup x:Name="CommonStates">
-                            <VisualState x:Name="Normal">
-                                <VisualState.Setters>
-                                    <Setter TargetName="Pill" Property="Border.BackgroundColor" Value="Transparent" />
-                                    <Setter TargetName="Dot" Property="BoxView.Color" Value="Transparent" />
-                                </VisualState.Setters>
-                            </VisualState>
-                            <VisualState x:Name="Selected">
-                                <VisualState.Setters>
-                                    <Setter TargetName="Pill" Property="Border.BackgroundColor" Value="#1FE8D5A8" />
-                                    <Setter TargetName="Dot" Property="BoxView.Color" Value="{StaticResource Accent}" />
-                                    <Setter TargetName="Lbl" Property="Label.TextColor" Value="{StaticResource Accent}" />
-                                </VisualState.Setters>
-                            </VisualState>
-                        </VisualStateGroup>
-                    </VisualStateGroupList>
-                </VisualStateManager.VisualStateGroups>
-                <Border x:Name="Pill" StrokeThickness="0" BackgroundColor="Transparent">
-                    <Border.StrokeShape><RoundRectangle CornerRadius="16" /></Border.StrokeShape>
-                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14" Padding="16,0">
-                        <BoxView x:Name="Dot" WidthRequest="6" HeightRequest="6" CornerRadius="3" VerticalOptions="Center" />
-                        <Label x:Name="Lbl" Grid.Column="1" Text="{Binding Title}" FontSize="16" TextColor="White"
-                               FontFamily="OpenSansSemibold" VerticalOptions="Center" />
-                    </Grid>
-                </Border>
+    <Shell.FlyoutContent>
+        <Grid RowDefinitions="Auto,*,Auto" BackgroundColor="{StaticResource Ink}">
+            <Grid BackgroundColor="{DynamicResource AtmosphereTop}" Padding="24,24,18,22"
+                  ColumnDefinitions="*,48" ColumnSpacing="8">
+                <VerticalStackLayout Spacing="4" VerticalOptions="Center">
+                    <Label Text="AURA" CharacterSpacing="7" Style="{StaticResource Headline}" />
+                    <Label Text="PARFUM" Style="{StaticResource Eyebrow}" />
+                </VerticalStackLayout>
+                <Button Grid.Column="1" Text="×" FontSize="24" Padding="0" Style="{StaticResource PillButton}"
+                        VerticalOptions="Start" SemanticProperties.Description="Fechar menu" Clicked="CloseFlyout" />
             </Grid>
-        </DataTemplate>
-    </Shell.ItemTemplate>
 
-    <Shell.FlyoutFooter>
-        <Label Text="Aura · feito para sentir o clima" FontSize="12" TextColor="#B8B5C8"
-               Padding="24,16,24,28" Opacity="0.7" />
-    </Shell.FlyoutFooter>
+            <ScrollView Grid.Row="1">
+                <VerticalStackLayout Spacing="10" Padding="14,12">
+                    <VerticalStackLayout Spacing="5"
+                        BindableLayout.ItemsSource="{Binding Source={x:Reference ShellRoot}, Path=Destinations, x:DataType=local:AppShell}">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="local:FlyoutDestination">
+                                <Grid>
+                                    <Button Style="{StaticResource PillButton}" CommandParameter="{Binding Location}" Clicked="OpenFromFlyout"
+                                            BackgroundColor="Transparent" BorderColor="Transparent" CornerRadius="14"
+                                            SemanticProperties.Description="{Binding Title}">
+                                        <Button.Triggers>
+                                            <DataTrigger TargetType="Button" Value="True">
+                                                <DataTrigger.Binding>
+                                                    <MultiBinding Converter="{StaticResource MatchingText}">
+                                                        <Binding Path="Route" />
+                                                        <Binding Source="{x:Reference ShellRoot}" Path="ActiveDestination" x:DataType="local:AppShell" />
+                                                    </MultiBinding>
+                                                </DataTrigger.Binding>
+                                                <Setter Property="BackgroundColor" Value="{DynamicResource AccentGlass}" />
+                                                <Setter Property="BorderColor" Value="{DynamicResource Accent}" />
+                                                <Setter Property="SemanticProperties.Hint" Value="Destino atual" />
+                                            </DataTrigger>
+                                        </Button.Triggers>
+                                    </Button>
+                                    <Grid ColumnDefinitions="22,*" ColumnSpacing="12" Padding="14,0" InputTransparent="True"
+                                          AutomationProperties.ExcludedWithChildren="True">
+                                        <Image Source="{Binding Icon}" WidthRequest="20" HeightRequest="20" />
+                                        <Label Grid.Column="1" Text="{Binding Title}" FontFamily="OpenSansSemibold" FontSize="15" VerticalOptions="Center" />
+                                    </Grid>
+                                </Grid>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+                    <Button Text="Alterar cidade" ImageSource="aura_search.png" ContentLayout="Left,10" Clicked="FindCity"
+                            Style="{StaticResource PillButton}" HorizontalOptions="Start" />
+                </VerticalStackLayout>
+            </ScrollView>
 
-    <Shell.FlyoutHeader>
-        <Grid HeightRequest="220">
-            <Grid.Background>
-                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                    <GradientStop Color="#2B1055" Offset="0" />
-                    <GradientStop Color="#0B0B14" Offset="1" />
-                </LinearGradientBrush>
-            </Grid.Background>
-            <VerticalStackLayout VerticalOptions="End" Padding="24,0,24,22" Spacing="2">
-                <BoxView WidthRequest="36" HeightRequest="2" Color="{StaticResource Accent}" HorizontalOptions="Start" Margin="0,0,0,8" />
-                <Label Text="AURA" FontSize="40" CharacterSpacing="12" TextColor="White" FontFamily="OpenSansSemibold" />
-                <Label Text="perfumes que sentem o clima" FontSize="13" TextColor="#B8B5C8" />
-            </VerticalStackLayout>
+            <Label Grid.Row="2" Text="Perfumes que sentem o clima." Style="{StaticResource Caption}" Padding="24,16,20,24" />
         </Grid>
-    </Shell.FlyoutHeader>
+    </Shell.FlyoutContent>
 
-    <FlyoutItem Title="Descobrir">
-        <Tab Title="Hoje">
-            <ShellContent Route="home" ContentTemplate="{DataTemplate views:HomePage}" />
+    <FlyoutItem Route="discover" Title="Descobrir" FlyoutDisplayOptions="AsMultipleItems">
+        <Tab Route="todayTab" Title="Hoje" Icon="aura_home.png">
+            <ShellContent Route="home" Title="Hoje" Icon="aura_home.png" ContentTemplate="{DataTemplate views:HomePage}" />
         </Tab>
-        <Tab Title="Explorar">
-            <ShellContent Route="explore" ContentTemplate="{DataTemplate views:ExplorePage}" />
+        <Tab Route="exploreTab" Title="Explorar" Icon="aura_explore.png">
+            <ShellContent Route="explore" Title="Explorar" Icon="aura_explore.png" ContentTemplate="{DataTemplate views:ExplorePage}" />
+        </Tab>
+        <Tab Route="favoritesTab" Title="Favoritos" Icon="aura_heart.png">
+            <ShellContent Route="favorites" Title="Favoritos" Icon="aura_heart.png" ContentTemplate="{DataTemplate views:FavoritesPage}" />
         </Tab>
     </FlyoutItem>
-
-    <FlyoutItem Title="Favoritos">
-        <ShellContent Route="favorites" ContentTemplate="{DataTemplate views:FavoritesPage}" />
+    <FlyoutItem Route="information" Title="Sobre o app" Icon="aura_about.png">
+        <Tab Route="aboutTab">
+            <ShellContent Route="about" ContentTemplate="{DataTemplate views:AboutPage}" />
+        </Tab>
     </FlyoutItem>
-
-    <FlyoutItem Title="Sobre o app">
-        <ShellContent Route="about" ContentTemplate="{DataTemplate views:AboutPage}" />
-    </FlyoutItem>
-
 </Shell>

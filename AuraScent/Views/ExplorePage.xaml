@@ -1,97 +1,145 @@
-<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <ContentPage x:Class="AuraScent.Views.ExplorePage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:vm="clr-namespace:AuraScent.ViewModels"
     xmlns:ctl="clr-namespace:AuraScent.Controls"
     xmlns:m="clr-namespace:AuraScent.Models"
-    x:DataType="vm:ExploreViewModel"
-    Shell.NavBarIsVisible="False"
-    BackgroundColor="{StaticResource Ink}">
+    x:DataType="vm:ExploreViewModel" Shell.NavBarIsVisible="False"
+    SafeAreaEdges="All" Background="{DynamicResource AtmosphereBackdrop}">
 
-    <Grid>
-        <ctl:AuroraBackground Atmosphere="{Binding State.Current}" />
+    <Grid x:Name="PageContent" MaximumWidthRequest="1200" Padding="16,12,16,0">
+        <CollectionView ItemsSource="{Binding Results}" ItemSizingStrategy="MeasureAllItems">
+            <CollectionView.ItemsLayout>
+                <GridItemsLayout x:Name="ResultsLayout" Orientation="Vertical" Span="1" VerticalItemSpacing="10" HorizontalItemSpacing="12" />
+            </CollectionView.ItemsLayout>
+            <CollectionView.Header>
+                <VerticalStackLayout Spacing="14" Padding="0,0,0,16">
+                    <Grid x:Name="ExploreHeading" ColumnDefinitions="48,*" ColumnSpacing="14" Loaded="RevealHeading">
+                        <ctl:MenuButton VerticalOptions="Start" />
+                        <VerticalStackLayout Grid.Column="1" VerticalOptions="Center">
+                            <Label Text="EXPLORAR" Style="{StaticResource Eyebrow}" />
+                            <Label Text="Encontre sua assinatura" Style="{StaticResource Headline}" SemanticProperties.HeadingLevel="Level1" />
+                        </VerticalStackLayout>
+                    </Grid>
 
-        <ScrollView VerticalScrollBarVisibility="Never">
-            <VerticalStackLayout Padding="24,56,24,40" Spacing="18">
-                <Grid ColumnDefinitions="*,Auto">
-                    <VerticalStackLayout Spacing="2">
-                        <Label Text="explorar" Style="{StaticResource Eyebrow}" />
-                        <Label Text="Encontre sua assinatura" Style="{StaticResource Headline}" />
-                    </VerticalStackLayout>
-                    <ctl:MenuButton Grid.Column="1" VerticalOptions="Start" />
-                </Grid>
-
-                <VerticalStackLayout Spacing="12">
-                    <Border Style="{StaticResource Glass}" Padding="18,4">
-                        <Entry Text="{Binding Query}" Style="{StaticResource GhostEntry}"
-                               Placeholder="Nota, casa ou perfume…" ReturnType="Search"
-                               ReturnCommand="{Binding SearchCommand}" />
+                    <Border Style="{StaticResource Glass}" StrokeShape="RoundRectangle 24"
+                            BackgroundColor="{StaticResource SearchSurface}" Padding="12,0,0,0">
+                        <Border.Triggers>
+                            <DataTrigger TargetType="Border" Binding="{Binding Source={x:Reference SearchEntry}, Path=IsFocused, x:DataType=Entry}" Value="True">
+                                <Setter Property="Stroke" Value="{DynamicResource Accent}" />
+                            </DataTrigger>
+                        </Border.Triggers>
+                        <Grid ColumnDefinitions="20,*,48" ColumnSpacing="8">
+                            <Image Source="aura_search.png" WidthRequest="18" HeightRequest="18" />
+                            <Entry x:Name="SearchEntry" Grid.Column="1" Text="{Binding Query}" Style="{StaticResource GhostEntry}"
+                                   Placeholder="Nota, casa ou perfume…" ReturnType="Search" ClearButtonVisibility="WhileEditing"
+                                   ReturnCommand="{Binding SearchCommand}" Completed="FinishSearch"
+                                   SemanticProperties.Description="Buscar por nota, casa ou perfume" />
+                            <Button Grid.Column="2" ImageSource="aura_arrow.png" Command="{Binding SearchCommand}" Style="{StaticResource PillButton}"
+                                    Padding="0" BorderWidth="0" BackgroundColor="Transparent" Clicked="FinishSearch"
+                                    SemanticProperties.Description="Buscar perfumes" />
+                        </Grid>
                     </Border>
 
-                    <VerticalStackLayout Spacing="6" IsVisible="{Binding ShowSuggestions}"
-                                         BindableLayout.ItemsSource="{Binding Suggestions}">
+                    <VerticalStackLayout Spacing="4" IsVisible="{Binding ShowSuggestions}" BindableLayout.ItemsSource="{Binding Suggestions}">
                         <BindableLayout.ItemTemplate>
                             <DataTemplate x:DataType="m:PerfumeSuggestion">
-                                <Border Style="{StaticResource Glass}" Padding="12,8">
-                                    <Border.GestureRecognizers>
-                                        <TapGestureRecognizer
-                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:ExploreViewModel}}, Path=SelectSuggestionCommand}"
-                                            CommandParameter="{Binding .}" />
-                                    </Border.GestureRecognizers>
-                                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                                        <Label Text="{Binding Category}" TextColor="{StaticResource Accent}"
-                                               FontSize="11" VerticalOptions="Center" />
-                                        <VerticalStackLayout Grid.Column="1" Spacing="2">
-                                            <Label Text="{Binding Title}" TextColor="White" />
-                                            <Label Text="{Binding Subtitle}" Style="{StaticResource Caption}" />
+                                <Border Style="{StaticResource Glass}" BackgroundColor="{StaticResource SearchSurface}">
+                                    <Grid>
+                                        <VerticalStackLayout Padding="12,8" Spacing="2" InputTransparent="True" AutomationProperties.IsInAccessibleTree="False">
+                                            <Label Text="{Binding Category}" Style="{StaticResource Eyebrow}" />
+                                            <Label Text="{Binding Title}" />
+                                            <Label Text="{Binding Subtitle}" Style="{StaticResource Caption}"
+                                                   IsVisible="{Binding Subtitle, Converter={StaticResource StringToBoolConverter}}" />
                                         </VerticalStackLayout>
+                                        <Button Style="{StaticResource PillButton}" BorderWidth="0" BackgroundColor="Transparent"
+                                                CommandParameter="{Binding .}" Clicked="FinishSearch"
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:ExploreViewModel}}, Path=SelectSuggestionCommand}">
+                                            <SemanticProperties.Description>
+                                                <MultiBinding StringFormat="{}{0}, {1}, {2}">
+                                                    <Binding Path="Category" /><Binding Path="Title" /><Binding Path="Subtitle" />
+                                                </MultiBinding>
+                                            </SemanticProperties.Description>
+                                        </Button>
                                     </Grid>
                                 </Border>
                             </DataTemplate>
                         </BindableLayout.ItemTemplate>
                     </VerticalStackLayout>
 
-                    <ScrollView Orientation="Horizontal" HorizontalScrollBarVisibility="Never">
-                        <HorizontalStackLayout Spacing="8" BindableLayout.ItemsSource="{Binding QuickTerms}">
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="Buscas rápidas" Style="{StaticResource Eyebrow}" />
+                        <FlexLayout Wrap="Wrap" AlignItems="Start" BindableLayout.ItemsSource="{Binding QuickTerms}">
                             <BindableLayout.ItemTemplate>
                                 <DataTemplate x:DataType="x:String">
-                                    <Border Style="{StaticResource Chip}">
-                                        <Border.GestureRecognizers>
-                                            <TapGestureRecognizer
-                                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:ExploreViewModel}}, Path=SearchCommand}"
-                                                CommandParameter="{Binding .}" />
-                                        </Border.GestureRecognizers>
-                                        <Label Text="{Binding .}" TextColor="White" FontSize="14" />
-                                    </Border>
+                                    <Button Text="{Binding .}" CommandParameter="{Binding .}" Style="{StaticResource PillButton}"
+                                            Margin="0,0,6,6" Clicked="FinishSearch"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:ExploreViewModel}}, Path=SearchCommand}">
+                                        <Button.Triggers>
+                                            <DataTrigger TargetType="Button" Value="True">
+                                                <DataTrigger.Binding>
+                                                    <MultiBinding Converter="{StaticResource MatchingText}">
+                                                        <Binding Path="." />
+                                                        <Binding Source="{RelativeSource AncestorType={x:Type vm:ExploreViewModel}}" Path="Query" x:DataType="vm:ExploreViewModel" />
+                                                    </MultiBinding>
+                                                </DataTrigger.Binding>
+                                                <Setter Property="BackgroundColor" Value="{DynamicResource AccentGlass}" />
+                                                <Setter Property="BorderColor" Value="{DynamicResource Accent}" />
+                                                <Setter Property="TextColor" Value="{DynamicResource Accent}" />
+                                            </DataTrigger>
+                                        </Button.Triggers>
+                                    </Button>
                                 </DataTemplate>
                             </BindableLayout.ItemTemplate>
-                        </HorizontalStackLayout>
-                    </ScrollView>
+                        </FlexLayout>
+                    </VerticalStackLayout>
 
-                    <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" Color="{StaticResource Accent}" HorizontalOptions="Start" />
-                    <Label Text="{Binding ErrorMessage}" IsVisible="{Binding HasError}" TextColor="#FF9A9A" />
+                    <HorizontalStackLayout Spacing="8" IsVisible="{Binding IsBusy}">
+                        <ActivityIndicator IsRunning="{Binding IsBusy}" Color="{DynamicResource Accent}" WidthRequest="24" HeightRequest="24" />
+                        <Label Text="Buscando perfumes…" Style="{StaticResource Body}" VerticalOptions="Center" />
+                    </HorizontalStackLayout>
+                    <Border Style="{StaticResource Glass}" Padding="12" IsVisible="{Binding HasError}">
+                        <VerticalStackLayout Spacing="8">
+                            <Label Text="{Binding ErrorMessage}" Style="{StaticResource Body}" TextColor="{StaticResource ErrorColor}" />
+                            <Button Text="Tentar novamente" Command="{Binding RetrySearchCommand}" Style="{StaticResource PillButton}" HorizontalOptions="Start" />
+                        </VerticalStackLayout>
+                    </Border>
+                    <Border x:Name="EmptySearchPanel" Style="{StaticResource Glass}" Padding="16" IsVisible="{Binding ShowSearchHint}">
+                        <VerticalStackLayout Spacing="5">
+                            <Label Text="Comece por uma nota que você gosta" Style="{StaticResource CardTitle}">
+                                <Label.Triggers>
+                                    <DataTrigger TargetType="Label" Binding="{Binding HasSearched}" Value="True">
+                                        <Setter Property="Text" Value="Nenhum perfume encontrado" />
+                                    </DataTrigger>
+                                </Label.Triggers>
+                            </Label>
+                            <Label Text="Você também pode buscar pelo nome de uma casa ou de um perfume." Style="{StaticResource Body}">
+                                <Label.Triggers>
+                                    <DataTrigger TargetType="Label" Binding="{Binding HasSearched}" Value="True">
+                                        <Setter Property="Text" Value="Experimente outra nota, casa ou grafia." />
+                                    </DataTrigger>
+                                </Label.Triggers>
+                            </Label>
+                        </VerticalStackLayout>
+                    </Border>
+                    <Label x:Name="ResultsTitle" Text="{Binding ResultsQuery, StringFormat='Resultados para “{0}”'}"
+                           Style="{StaticResource Title}" SemanticProperties.HeadingLevel="Level2">
+                        <Label.Triggers>
+                            <DataTrigger TargetType="Label" Binding="{Binding HasNoResults}" Value="True">
+                                <Setter Property="IsVisible" Value="False" />
+                            </DataTrigger>
+                        </Label.Triggers>
+                    </Label>
                 </VerticalStackLayout>
-
-                <Label Text="Busque por uma nota (oud, rosa, baunilha…), uma casa ou o nome de um perfume."
-                       Style="{StaticResource Body}" Margin="0,6,0,0"
-                       IsVisible="{Binding HasNoResults}" />
-
-                <FlexLayout Wrap="Wrap" Direction="Row" JustifyContent="SpaceBetween" AlignItems="Start"
-                            BindableLayout.ItemsSource="{Binding Results}">
-                    <BindableLayout.ItemTemplate>
-                        <DataTemplate x:DataType="m:PerfumeSummary">
-                            <ctl:PerfumeCard HeightRequest="190" FlexLayout.Basis="48.5%" Margin="0,0,0,12">
-                                <ctl:PerfumeCard.GestureRecognizers>
-                                    <TapGestureRecognizer
-                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:ExploreViewModel}}, Path=OpenPerfumeCommand}"
-                                        CommandParameter="{Binding .}" />
-                                </ctl:PerfumeCard.GestureRecognizers>
-                            </ctl:PerfumeCard>
-                        </DataTemplate>
-                    </BindableLayout.ItemTemplate>
-                </FlexLayout>
-            </VerticalStackLayout>
-        </ScrollView>
+            </CollectionView.Header>
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="m:PerfumeSummary">
+                    <ctl:PerfumeCard IsList="True"
+                                     OpenCommand="{Binding Source={RelativeSource AncestorType={x:Type vm:ExploreViewModel}}, Path=OpenPerfumeCommand}" />
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+            <CollectionView.Footer><BoxView HeightRequest="18" Color="Transparent" /></CollectionView.Footer>
+        </CollectionView>
     </Grid>
 </ContentPage>

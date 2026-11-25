@@ -2,6 +2,8 @@ namespace AuraScent.Models;
 
 public sealed record WeatherSnapshot(string City, double TemperatureC, int WeatherCode, bool IsDay, int HumidityPercent, string CountryCode = "")
 {
+    public string Country { get; init; } = "";
+
     public bool IsRainy => WeatherCode is (>= 51 and <= 67) or (>= 80 and <= 82) or >= 95;
     public bool IsClear => WeatherCode is 0 or 1;
 

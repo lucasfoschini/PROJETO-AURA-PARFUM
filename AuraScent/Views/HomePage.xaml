@@ -1,90 +1,168 @@
-<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <ContentPage x:Class="AuraScent.Views.HomePage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:vm="clr-namespace:AuraScent.ViewModels"
     xmlns:ctl="clr-namespace:AuraScent.Controls"
     xmlns:m="clr-namespace:AuraScent.Models"
-    x:DataType="vm:HomeViewModel"
-    Shell.NavBarIsVisible="False"
-    BackgroundColor="{StaticResource Ink}">
+    xmlns:local="clr-namespace:AuraScent.Views"
+    x:DataType="vm:HomeViewModel" Shell.NavBarIsVisible="False"
+    SafeAreaEdges="All" Background="{DynamicResource AtmosphereBackdrop}">
 
-    <Grid>
-        <ctl:AuroraBackground Atmosphere="{Binding State.Current}" />
+    <ContentPage.Resources>
+        <DataTemplate x:Key="RecommendationCard" x:DataType="m:PerfumeSummary">
+            <ctl:PerfumeCard OpenCommand="{Binding Source={RelativeSource AncestorType={x:Type vm:HomeViewModel}}, Path=OpenPerfumeCommand}"
+                             WidthRequest="184" />
+        </DataTemplate>
+        <DataTemplate x:Key="WideRecommendationCard" x:DataType="m:PerfumeSummary">
+            <ctl:PerfumeCard OpenCommand="{Binding Source={RelativeSource AncestorType={x:Type vm:HomeViewModel}}, Path=OpenPerfumeCommand}"
+                             FlexLayout.Basis="{x:Static local:HomePage.RecommendationColumn}" Margin="0,0,0,14" />
+        </DataTemplate>
+    </ContentPage.Resources>
 
-        <ScrollView VerticalScrollBarVisibility="Never">
-            <VerticalStackLayout Padding="24,56,24,40" Spacing="26">
+    <ScrollView x:Name="HomeScroll" VerticalScrollBarVisibility="Default">
+        <VerticalStackLayout x:Name="PageContent" MaximumWidthRequest="1200" Padding="16,12,16,24" Spacing="16">
+            <Grid ColumnDefinitions="48,*,48" ColumnSpacing="12">
+                <ctl:MenuButton VerticalOptions="Center" />
+                <VerticalStackLayout Grid.Column="1" HorizontalOptions="Center" VerticalOptions="Center">
+                    <Label Text="AURA" Style="{StaticResource CardTitle}" CharacterSpacing="7"
+                           HorizontalTextAlignment="Center" SemanticProperties.HeadingLevel="Level1" />
+                    <Label Text="PARFUM" Style="{StaticResource Eyebrow}" HorizontalTextAlignment="Center" />
+                </VerticalStackLayout>
+                <Button Grid.Column="2" ImageSource="aura_heart.png" Style="{StaticResource PillButton}"
+                        WidthRequest="48" HeightRequest="48" Padding="0" VerticalOptions="Center"
+                        Command="{Binding ShowFavoritesCommand}" SemanticProperties.Description="Abrir favoritos" />
+            </Grid>
 
-                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                    <VerticalStackLayout Spacing="2">
-                        <Label Text="agora em" Style="{StaticResource Eyebrow}" />
-                        <Entry Text="{Binding City}" Style="{StaticResource GhostEntry}"
-                               Placeholder="Digite uma cidade" ReturnType="Search"
-                               ReturnCommand="{Binding LoadCommand}" />
-                        <VerticalStackLayout Spacing="6" IsVisible="{Binding ShowCitySuggestions}"
+            <Border Style="{StaticResource Glass}" StrokeShape="RoundRectangle 28">
+                <Grid>
+                    <ctl:AuroraBackground x:Name="Sky" Atmosphere="{Binding State.Current}" />
+                    <VerticalStackLayout x:Name="HeroContent" Padding="18" Spacing="16" MinimumHeightRequest="322">
+                        <Border Style="{StaticResource Glass}" StrokeShape="RoundRectangle 24"
+                                BackgroundColor="{StaticResource SearchSurface}" Padding="12,0,0,0">
+                            <Border.Triggers>
+                                <DataTrigger TargetType="Border" Binding="{Binding Source={x:Reference CityEntry}, Path=IsFocused, x:DataType=Entry}" Value="True">
+                                    <Setter Property="Stroke" Value="{DynamicResource Accent}" />
+                                </DataTrigger>
+                            </Border.Triggers>
+                            <Grid ColumnDefinitions="20,*,48" ColumnSpacing="8">
+                                <Image Source="aura_search.png" WidthRequest="18" HeightRequest="18" />
+                                <Entry x:Name="CityEntry" Grid.Column="1" Text="{Binding City}" Style="{StaticResource GhostEntry}"
+                                       Placeholder="Buscar outra cidade" ReturnType="Search" ClearButtonVisibility="WhileEditing"
+                                       ReturnCommand="{Binding LoadCommand}" Completed="FinishCitySearch"
+                                       SemanticProperties.Description="Buscar cidade" />
+                                <Button Grid.Column="2" ImageSource="aura_arrow.png" Style="{StaticResource PillButton}"
+                                        Command="{Binding LoadCommand}" Clicked="FinishCitySearch" Padding="0" BorderWidth="0" BackgroundColor="Transparent"
+                                        SemanticProperties.Description="Consultar clima e perfumes" />
+                            </Grid>
+                        </Border>
+
+                        <VerticalStackLayout Spacing="4" IsVisible="{Binding ShowCitySuggestions}"
                                              BindableLayout.ItemsSource="{Binding CitySuggestions}">
                             <BindableLayout.ItemTemplate>
                                 <DataTemplate x:DataType="m:CitySuggestion">
-                                    <Border Style="{StaticResource Glass}" Padding="12,8">
-                                        <Border.GestureRecognizers>
-                                            <TapGestureRecognizer
-                                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:HomeViewModel}}, Path=SelectCityCommand}"
-                                                CommandParameter="{Binding .}" />
-                                        </Border.GestureRecognizers>
-                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                                            <VerticalStackLayout Spacing="2">
-                                                <Label Text="{Binding Name}" TextColor="White" />
+                                    <Border Style="{StaticResource Glass}" BackgroundColor="{StaticResource SearchSurface}">
+                                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                                            <Image Source="{Binding FlagUrl}" Margin="12,0,0,0" WidthRequest="26"
+                                                   HeightRequest="19" Aspect="AspectFit" InputTransparent="True"
+                                                   IsVisible="{Binding FlagUrl, Converter={StaticResource StringToBoolConverter}}" />
+                                            <VerticalStackLayout Grid.Column="1" Padding="8" Spacing="2" InputTransparent="True"
+                                                                 AutomationProperties.IsInAccessibleTree="False">
+                                                <Label Text="{Binding Name}" />
                                                 <Label Text="{Binding SecondaryText}" Style="{StaticResource Caption}" />
                                             </VerticalStackLayout>
-                                            <Image Grid.Column="1" Source="{Binding FlagUrl}"
-                                                   HeightRequest="20" WidthRequest="30" Aspect="AspectFit"
-                                                   VerticalOptions="Center" HorizontalOptions="End"
-                                                   IsVisible="{Binding FlagUrl, Converter={StaticResource StringToBoolConverter}}" />
+                                            <Button Grid.ColumnSpan="3" Style="{StaticResource PillButton}" BorderWidth="0"
+                                                    BackgroundColor="Transparent" CommandParameter="{Binding .}" Clicked="FinishCitySearch"
+                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type vm:HomeViewModel}}, Path=SelectCityCommand}">
+                                                <SemanticProperties.Description>
+                                                    <MultiBinding StringFormat="{}{0}, {1}">
+                                                        <Binding Path="Name" /><Binding Path="SecondaryText" />
+                                                    </MultiBinding>
+                                                </SemanticProperties.Description>
+                                            </Button>
                                         </Grid>
                                     </Border>
                                 </DataTemplate>
                             </BindableLayout.ItemTemplate>
                         </VerticalStackLayout>
+
+                        <Grid x:Name="WeatherGrid" RowDefinitions="Auto,Auto" RowSpacing="8" ColumnSpacing="20"
+                              IsVisible="{Binding HasWeather}">
+                            <VerticalStackLayout x:Name="CityBlock" Spacing="4" VerticalOptions="Center">
+                                <Label Text="HOJE EM" Style="{StaticResource Eyebrow}" />
+                                <Label Text="{Binding DisplayCity}" Style="{StaticResource Headline}" FontSize="42"
+                                       SemanticProperties.HeadingLevel="Level2" />
+                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="7">
+                                    <Image Source="{Binding CountryFlagUrl}" WidthRequest="24" HeightRequest="17"
+                                           Aspect="AspectFit" IsVisible="{Binding CountryFlagUrl, Converter={StaticResource StringToBoolConverter}}" />
+                                    <Label Grid.Column="1" Text="{Binding DisplayCountry}" Style="{StaticResource Caption}" />
+                                </Grid>
+                            </VerticalStackLayout>
+                            <VerticalStackLayout x:Name="WeatherBlock" Grid.Row="1" VerticalOptions="Center">
+                                <Grid ColumnDefinitions="Auto,Auto" ColumnSpacing="8" HorizontalOptions="Start">
+                                    <Label Text="{Binding TemperatureText}" Style="{StaticResource Display}" />
+                                    <ctl:AtmosphereIcon Grid.Column="1" Atmosphere="{Binding State.Current}" VerticalOptions="Center"
+                                                        WidthRequest="34" HeightRequest="34" />
+                                </Grid>
+                                <Label Text="{Binding WeatherSummary}" Style="{StaticResource Body}" TextColor="{StaticResource TextPrimary}" />
+                            </VerticalStackLayout>
+                        </Grid>
+
+                        <Label Text="Clima e fragrâncias" Style="{StaticResource Headline}" Margin="0,28,0,0" IsVisible="False">
+                            <Label.Triggers>
+                                <DataTrigger TargetType="Label" Binding="{Binding HasWeather}" Value="False"><Setter Property="IsVisible" Value="True" /></DataTrigger>
+                            </Label.Triggers>
+                        </Label>
+
+                        <HorizontalStackLayout Spacing="8" IsVisible="{Binding IsBusy}">
+                            <ActivityIndicator Color="{DynamicResource Accent}" IsRunning="{Binding IsBusy}" WidthRequest="24" HeightRequest="24" />
+                            <Label Text="{Binding LoadingText}" Style="{StaticResource Body}" VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+                        <Border Style="{StaticResource Glass}" BackgroundColor="{StaticResource Surface}"
+                                Padding="12" IsVisible="{Binding HasError}">
+                            <VerticalStackLayout Spacing="8">
+                                <Label Text="{Binding ErrorMessage}" Style="{StaticResource Body}" TextColor="{StaticResource ErrorColor}" />
+                                <Button Text="Tentar novamente" Command="{Binding LoadCommand}" Style="{StaticResource PillButton}" HorizontalOptions="Start" />
+                            </VerticalStackLayout>
+                        </Border>
                     </VerticalStackLayout>
-                    <ctl:MenuButton Grid.Column="1" VerticalOptions="Start" />
                 </Grid>
+            </Border>
 
-                <VerticalStackLayout x:Name="HeroBlock" Opacity="0" Spacing="2">
-                    <HorizontalStackLayout Spacing="10">
-                        <Label Text="{Binding TemperatureText}" Style="{StaticResource Display}" />
-                        <Image Source="{Binding CountryFlagUrl}" HeightRequest="28" WidthRequest="42"
-                               Aspect="AspectFit" VerticalOptions="Center"
-                               IsVisible="{Binding CountryFlagUrl, Converter={StaticResource StringToBoolConverter}}" />
-                    </HorizontalStackLayout>
-                    <Label Text="{Binding WeatherSummary}" Style="{StaticResource Title}" />
-                    <Label Text="{Binding State.Current.Tagline}" Style="{StaticResource Body}" Margin="0,8,0,0" />
-                </VerticalStackLayout>
+            <Border x:Name="AtmospherePanel" Style="{StaticResource Glass}" Padding="12" IsVisible="{Binding HasWeather}">
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                    <Border Style="{StaticResource Chip}" Padding="9" WidthRequest="46" HeightRequest="46" VerticalOptions="Center"
+                            Stroke="{DynamicResource Accent}" BackgroundColor="{DynamicResource AccentGlass}">
+                        <ctl:AtmosphereIcon Atmosphere="{Binding State.Current}" />
+                    </Border>
+                    <VerticalStackLayout Spacing="3" Grid.Column="1">
+                        <Label Text="Sua atmosfera" Style="{StaticResource Eyebrow}" />
+                        <Label Text="{Binding AtmosphereTitle}" Style="{StaticResource Title}" />
+                        <Label Text="{Binding State.Current.Tagline}" Style="{StaticResource Caption}" />
+                    </VerticalStackLayout>
+                    <Button x:Name="DiscoverButton" Grid.Column="2" Text="Descobrir" IsVisible="False"
+                            Style="{StaticResource PillButton}" TextColor="{DynamicResource Accent}" VerticalOptions="Center"
+                            Clicked="ShowRecommendations" />
+                </Grid>
+            </Border>
 
-                <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}"
-                                   Color="{StaticResource Accent}" HorizontalOptions="Start" />
-                <Label Text="{Binding ErrorMessage}" IsVisible="{Binding HasError}" TextColor="#FF9A9A" />
-
-                <VerticalStackLayout x:Name="CardsBlock" Opacity="0" Spacing="14">
-                    <Label Text="{Binding State.Current.Name, StringFormat='Assinaturas para um dia {0}'}"
-                           Style="{StaticResource Eyebrow}" />
-
-                    <CollectionView ItemsSource="{Binding Recommendations}" ItemsLayout="HorizontalList"
-                                    HeightRequest="312" HorizontalScrollBarVisibility="Never">
-                        <CollectionView.ItemTemplate>
-                            <DataTemplate x:DataType="m:PerfumeSummary">
-                                <ctl:PerfumeCard WidthRequest="222" HeightRequest="296" Margin="0,0,14,0">
-                                    <ctl:PerfumeCard.GestureRecognizers>
-                                        <TapGestureRecognizer
-                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:HomeViewModel}}, Path=OpenPerfumeCommand}"
-                                            CommandParameter="{Binding .}" />
-                                    </ctl:PerfumeCard.GestureRecognizers>
-                                </ctl:PerfumeCard>
-                            </DataTemplate>
-                        </CollectionView.ItemTemplate>
-                    </CollectionView>
-                </VerticalStackLayout>
-
+            <VerticalStackLayout x:Name="CardsBlock" IsVisible="{Binding HasWeather}" Spacing="12" Margin="0,6,0,0">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Curadoria olfativa" Style="{StaticResource Eyebrow}" />
+                        <Label Text="Assinaturas para hoje" Style="{StaticResource Title}" SemanticProperties.HeadingLevel="Level2" />
+                        <Label Text="Fragrâncias inspiradas no seu clima." Style="{StaticResource Caption}" />
+                    </VerticalStackLayout>
+                    <Button Grid.Column="1" Text="Explorar" Command="{Binding ShowExploreCommand}" Style="{StaticResource PillButton}"
+                            VerticalOptions="Center" TextColor="{DynamicResource Accent}" />
+                </Grid>
+                <ScrollView x:Name="MobileCards" Orientation="Horizontal" HorizontalScrollBarVisibility="Default">
+                    <HorizontalStackLayout Spacing="10" Padding="0,0,0,8" BindableLayout.ItemsSource="{Binding Recommendations}"
+                                           BindableLayout.ItemTemplate="{StaticResource RecommendationCard}" />
+                </ScrollView>
+                <FlexLayout x:Name="WideCards" IsVisible="False" Wrap="Wrap" JustifyContent="SpaceBetween" AlignItems="Start"
+                            BindableLayout.ItemTemplate="{StaticResource WideRecommendationCard}" />
             </VerticalStackLayout>
-        </ScrollView>
-    </Grid>
+        </VerticalStackLayout>
+    </ScrollView>
 </ContentPage>

@@ -1,18 +1,27 @@
-<?xml version="1.0" encoding="utf-8" ?>
-<ContentView x:Class="AuraScent.Controls.PerfumeCard"
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentView x:Class="AuraScent.Controls.PerfumeCard" x:Name="Card"
              xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:m="clr-namespace:AuraScent.Models"
              xmlns:local="clr-namespace:AuraScent.Controls"
              x:DataType="m:PerfumeSummary">
-    <Border Style="{StaticResource Glass}">
-        <Grid RowDefinitions="*,Auto" Padding="18">
-            <local:BottleView Perfume="{Binding .}" Margin="0,0,0,8" />
-            <VerticalStackLayout Grid.Row="1" Spacing="4">
-                <Label Text="{Binding House}" Style="{StaticResource Eyebrow}" MaxLines="1" LineBreakMode="TailTruncation" />
-                <Label Text="{Binding Name}" Style="{StaticResource CardTitle}" MaxLines="2" LineBreakMode="TailTruncation" />
-                <Label Text="{Binding DisplayFamily}" Style="{StaticResource Caption}" MaxLines="1" LineBreakMode="TailTruncation" />
-            </VerticalStackLayout>
+    <Border x:Name="CardSurface" Style="{StaticResource Glass}">
+        <Grid>
+            <Grid x:Name="CardLayout" RowDefinitions="142,Auto" InputTransparent="True">
+                <local:BottleView Perfume="{Binding .}" />
+                <VerticalStackLayout x:Name="CardCopy" Grid.Row="1" Padding="12,10,12,14" Spacing="4" VerticalOptions="Center">
+                    <Label Text="{Binding House}" Style="{StaticResource Eyebrow}" MaxLines="1" LineBreakMode="TailTruncation"
+                           IsVisible="{Binding House, Converter={StaticResource StringToBoolConverter}}" />
+                    <Label Text="{Binding Name}" Style="{StaticResource CardTitle}" MaxLines="2" LineBreakMode="TailTruncation" />
+                    <Label Text="{Binding Family}" Style="{StaticResource Caption}" MaxLines="2" LineBreakMode="TailTruncation"
+                           IsVisible="{Binding Family, Converter={StaticResource StringToBoolConverter}}" />
+                </VerticalStackLayout>
+            </Grid>
+            <Button Style="{StaticResource PillButton}" Padding="0" BorderWidth="0" BackgroundColor="Transparent"
+                    Command="{Binding Source={x:Reference Card}, Path=OpenCommand, x:DataType=local:PerfumeCard}"
+                    CommandParameter="{Binding .}"
+                    SemanticProperties.Description="{Binding Name, StringFormat='Ver detalhes de {0}'}"
+                    Pressed="OnPressed" Released="OnReleased" />
         </Grid>
     </Border>
 </ContentView>

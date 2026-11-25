@@ -32,87 +32,162 @@ public static class BottleStyle
 
 public sealed class BottleDrawable : IDrawable
 {
-    public Color Liquid { get; set; } = Colors.Goldenrod;
-    public int Variant { get; set; }
-    public double Phase { get; set; }
-
-    public void Draw(ICanvas canvas, RectF r)
+    private static readonly Color Ink = Color.FromArgb("#101017");
+    private static readonly Color Silver = Colors.White.WithAlpha(0.58f);
+    private static readonly LinearGradientPaint Shelf = new()
     {
-        if (r.Width < 20 || r.Height < 20) return;
-
-        var unit = Math.Min(r.Width, r.Height * 0.85f);
-        var (bw, bh) = Variant switch
+        StartColor = Color.FromArgb("#19171F"),
+        EndColor = Color.FromArgb("#08090D"),
+        StartPoint = new Point(0, 0),
+        EndPoint = new Point(0.7, 1)
+    };
+    private static readonly LinearGradientPaint Cap = new()
+    {
+        GradientStops = new[] { new PaintGradientStop(0, Color.FromArgb("#383640")), new(0.35f, Ink), new(1, Colors.Black) },
+        StartPoint = new Point(0, 0),
+        EndPoint = new Point(1, 0)
+    };
+    private static readonly LinearGradientPaint Reflection = new()
+    {
+        StartPoint = new Point(0, 0),
+        EndPoint = new Point(1, 0.18),
+        GradientStops = new[]
         {
-            1 => (unit * 0.64f, unit * 0.64f),
-            2 => (unit * 0.42f, unit * 0.82f),
-            _ => (unit * 0.58f, unit * 0.62f)
+            new PaintGradientStop(0, Colors.Transparent),
+            new(0.5f, Colors.White.WithAlpha(0.48f)),
+            new(1, Colors.Transparent)
+        }
+    };
+
+    private PerfumeSummary? _perfume;
+    private PathF _body = new();
+    private Color _liquid = Colors.Transparent;
+    private LinearGradientPaint _glass = new();
+    private RadialGradientPaint _glow = new();
+    private float _width;
+    private float _bottom;
+    private float _left;
+
+    public float Phase { get; set; }
+
+    public void SetPerfume(PerfumeSummary? perfume)
+    {
+        _perfume = perfume;
+        if (perfume is null) return;
+        _liquid = BottleStyle.LiquidFor(perfume);
+        var variant = BottleStyle.VariantFor(perfume);
+        _width = variant == 2 ? 62 : 86;
+        _bottom = variant == 2 ? 122 : 118;
+        _left = (120 - _width) / 2;
+        _body = new PathF();
+        if (variant == 1)
+        {
+            _body.AppendRoundedRectangle(_left, 36, _width, _bottom - 36, 19);
+        }
+        else
+        {
+            _body.MoveTo(46, 31);
+            _body.LineTo(74, 31);
+            _body.LineTo(120 - _left - 6, 43);
+            _body.QuadTo(120 - _left, 47, 120 - _left, 54);
+            _body.LineTo(120 - _left, _bottom - 9);
+            _body.QuadTo(120 - _left, _bottom, 120 - _left - 8, _bottom);
+            _body.LineTo(_left + 8, _bottom);
+            _body.QuadTo(_left, _bottom, _left, _bottom - 9);
+            _body.LineTo(_left, 54);
+            _body.QuadTo(_left, 47, _left + 6, 43);
+            _body.Close();
+        }
+
+        _glass = new LinearGradientPaint
+        {
+            StartPoint = new Point(0, 0),
+            EndPoint = new Point(1, 0),
+            GradientStops = new[]
+            {
+                new PaintGradientStop(0, Silver),
+                new(0.15f, _liquid.WithAlpha(0.9f)),
+                new(0.52f, Color.FromHsla(_liquid.GetHue(), _liquid.GetSaturation(), _liquid.GetLuminosity() * 0.57f)),
+                new(0.83f, _liquid.WithAlpha(0.92f)),
+                new(1, Silver)
+            }
         };
-        var neckH = unit * 0.08f;
-        var capH = unit * 0.16f;
-        var total = bh + neckH + capH;
-
-        var x = r.X + (r.Width - bw) / 2f;
-        var capY = r.Y + (r.Height - total) / 2f;
-        var neckY = capY + capH;
-        var bodyY = neckY + neckH;
-        var bottom = bodyY + bh;
-
-        canvas.FillColor = Colors.Black.WithAlpha(0.28f);
-        canvas.FillEllipse(x - bw * 0.05f, bottom - unit * 0.015f, bw * 1.1f, unit * 0.07f);
-
-        canvas.FillColor = Colors.White.WithAlpha(0.18f);
-        canvas.FillRectangle(x + bw * 0.37f, neckY - 1, bw * 0.26f, neckH + 2);
-
-        var body = BodyPath(x, bodyY, bw, bh);
-        canvas.FillColor = Colors.White.WithAlpha(0.08f);
-        canvas.FillPath(body);
-
-        canvas.SaveState();
-        canvas.ClipPath(body);
-        var level = bodyY + bh * 0.38f;
-        var amp = bh * 0.018f;
-        var wave = new PathF();
-        wave.MoveTo(x, level);
-        for (float px = 0; px <= bw; px += 4)
-            wave.LineTo(x + px, level + MathF.Sin((float)Phase + px / bw * MathF.PI * 3f) * amp);
-        wave.LineTo(x + bw, bottom);
-        wave.LineTo(x, bottom);
-        wave.Close();
-
-        canvas.SetFillPaint(new LinearGradientPaint
+        _glow = new RadialGradientPaint
         {
-            StartColor = Liquid.WithAlpha(0.95f),
-            EndColor = Color.FromHsla(Liquid.GetHue(), Liquid.GetSaturation(), Liquid.GetLuminosity() * 0.55f),
-            StartPoint = new Point(0, 0),
-            EndPoint = new Point(0, 1)
-        }, new RectF(x, level, bw, bottom - level));
-        canvas.FillPath(wave);
-        canvas.RestoreState();
-
-        canvas.StrokeColor = Colors.White.WithAlpha(0.55f);
-        canvas.StrokeSize = 1.5f;
-        canvas.DrawPath(body);
-        canvas.FillColor = Colors.White.WithAlpha(0.28f);
-        canvas.FillRoundedRectangle(x + bw * 0.14f, bodyY + bh * 0.12f, bw * 0.08f, bh * 0.5f, bw * 0.04f);
-
-        var capW = bw * 0.42f;
-        var capX = x + (bw - capW) / 2f;
-        canvas.SetFillPaint(new LinearGradientPaint
-        {
-            StartColor = Color.FromArgb("#F5E3B0"),
-            EndColor = Color.FromArgb("#B08D3C"),
-            StartPoint = new Point(0, 0),
-            EndPoint = new Point(0, 1)
-        }, new RectF(capX, capY, capW, capH));
-        canvas.FillRoundedRectangle(capX, capY, capW, capH, capW * 0.18f);
+            GradientStops = new[]
+            {
+                new PaintGradientStop(0, _liquid.WithAlpha(0.5f)),
+                new(0.46f, _liquid.WithAlpha(0.15f)),
+                new(1, _liquid.WithAlpha(0))
+            }
+        };
     }
 
-    private PathF BodyPath(float x, float y, float w, float h)
+    public void Draw(ICanvas canvas, RectF rect)
     {
-        var p = new PathF();
-        if (Variant == 1) p.AppendEllipse(x, y, w, h);
-        else p.AppendRoundedRectangle(x, y, w, h, Variant == 2 ? w * 0.28f : w * 0.14f);
-        return p;
+        canvas.SetFillPaint(Shelf, rect);
+        canvas.FillRectangle(rect);
+        if (_perfume is null || rect.Width <= 0 || rect.Height <= 0) return;
+
+        var glow = new RectF(rect.X + rect.Width * 0.05f, rect.Y, rect.Width * 0.9f, rect.Height);
+        canvas.SetFillPaint(_glow, glow);
+        canvas.FillRectangle(glow);
+
+        var scale = Math.Min(rect.Width / 131, rect.Height / 139);
+        canvas.SaveState();
+        canvas.Translate(rect.X + (rect.Width - 120 * scale) / 2, rect.Y + (rect.Height - 132 * scale) / 2);
+        canvas.Scale(scale, scale);
+
+        canvas.FillColor = Colors.Black.WithAlpha(0.48f);
+        canvas.FillEllipse(_left - 5, _bottom - 2, _width + 10, 11);
+        canvas.FillColor = _liquid;
+        canvas.FillRectangle(50, 23, 20, 13);
+
+        canvas.SetFillPaint(_glass, new RectF(_left, 31, _width, _bottom - 31));
+        canvas.FillPath(_body);
+        DrawReflection(canvas);
+        canvas.StrokeColor = Silver;
+        canvas.StrokeSize = 0.85f;
+        canvas.DrawPath(_body);
+        canvas.DrawLine(_left + 5, 52, _left + 5, _bottom - 8);
+        canvas.DrawLine(_left + 5, _bottom - 6, 115 - _left, _bottom - 6);
+
+        var liquidLevel = 58 + MathF.Sin(Phase) * 2.5f;
+        canvas.StrokeColor = Colors.White.WithAlpha(0.25f);
+        canvas.DrawLine(_left + 6, liquidLevel, 114 - _left, liquidLevel);
+
+        var cap = new RectF(46, 6, 28, 21);
+        canvas.SetFillPaint(Cap, cap);
+        canvas.FillRoundedRectangle(cap.X, cap.Y, cap.Width, cap.Height, 3);
+        canvas.DrawRoundedRectangle(cap.X, cap.Y, cap.Width, cap.Height, 3);
+
+        var labelWidth = _width * 0.69f;
+        var labelX = (120 - labelWidth) / 2;
+        canvas.FillColor = Ink;
+        canvas.FillRoundedRectangle(labelX, 68, labelWidth, 33, 1.5f);
+        canvas.StrokeColor = _liquid.WithAlpha(0.54f);
+        canvas.DrawRoundedRectangle(labelX + 2, 70, labelWidth - 4, 29, 1);
+        canvas.FontColor = Colors.White;
+        canvas.FontSize = 5.5f;
+        canvas.DrawString("A U R A", 60, 81, HorizontalAlignment.Center);
+        canvas.FontSize = 8;
+        canvas.DrawString(_perfume.Initial, 60, 94, HorizontalAlignment.Center);
+        canvas.RestoreState();
+    }
+
+    private void DrawReflection(ICanvas canvas)
+    {
+        const float beamWidth = 28;
+        var progress = (Phase / MathF.Tau - 0.1f) / 0.65f;
+        if (progress is <= 0 or >= 1) return;
+
+        var beam = new RectF(_left - beamWidth + (_width + beamWidth) * progress, 31, beamWidth, _bottom - 31);
+        canvas.SaveState();
+        canvas.ClipPath(_body);
+        canvas.Alpha = MathF.Sin(progress * MathF.PI);
+        canvas.SetFillPaint(Reflection, beam);
+        canvas.FillRectangle(beam);
+        canvas.RestoreState();
     }
 }
 
@@ -120,10 +195,11 @@ public sealed class BottleView : GraphicsView
 {
     public static readonly BindableProperty PerfumeProperty = BindableProperty.Create(
         nameof(Perfume), typeof(PerfumeSummary), typeof(BottleView), null,
-        propertyChanged: (b, _, n) => ((BottleView)b).Update(n as PerfumeSummary));
+        propertyChanged: (view, _, value) => ((BottleView)view).Update((PerfumeSummary?)value));
 
     public static readonly BindableProperty AnimateLiquidProperty = BindableProperty.Create(
-        nameof(AnimateLiquid), typeof(bool), typeof(BottleView), false);
+        nameof(AnimateLiquid), typeof(bool), typeof(BottleView), false,
+        propertyChanged: (view, _, _) => ((BottleView)view).UpdateMotion());
 
     private readonly BottleDrawable _drawable = new();
 
@@ -145,21 +221,38 @@ public sealed class BottleView : GraphicsView
         InputTransparent = true;
     }
 
-    private void Update(PerfumeSummary? p)
+    private void Update(PerfumeSummary? perfume)
     {
-        if (p is null) return;
-        _drawable.Liquid = BottleStyle.LiquidFor(p);
-        _drawable.Variant = BottleStyle.VariantFor(p);
+        _drawable.SetPerfume(perfume);
         Invalidate();
+    }
+
+    protected override void OnHandlerChanging(HandlerChangingEventArgs args)
+    {
+        if (args.NewHandler is null) this.AbortAnimation("liquid");
+        base.OnHandlerChanging(args);
     }
 
     protected override void OnHandlerChanged()
     {
         base.OnHandlerChanged();
-        this.AbortAnimation("wave");
-        if (Handler is null || !AnimateLiquid) return;
+        UpdateMotion();
+    }
 
-        this.Animate("wave", v => { _drawable.Phase = v; Invalidate(); },
-            0, Math.PI * 2, 16, 5000, Easing.Linear, null, () => true);
+    private void UpdateMotion()
+    {
+        this.AbortAnimation("liquid");
+        if (Handler is null || !AnimateLiquid || !Motion.IsEnabled)
+        {
+            _drawable.Phase = 0;
+            Invalidate();
+            return;
+        }
+
+        this.Animate("liquid", value =>
+        {
+            _drawable.Phase = (float)value;
+            Invalidate();
+        }, 0, Math.Tau, 33, 8500, Easing.Linear, repeat: () => AnimateLiquid && Handler is not null);
     }
 }

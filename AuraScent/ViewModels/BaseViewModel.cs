@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using AuraScent.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 
 namespace AuraScent.ViewModels;
 
@@ -21,6 +22,12 @@ public abstract partial class BaseViewModel : ObservableObject
     private string? _errorMessage;
 
     public bool HasError => !string.IsNullOrEmpty(ErrorMessage);
+
+    [RelayCommand]
+    private Task ShowExploreAsync() => Shell.Current.GoToAsync(AppShell.ExploreRoute);
+
+    [RelayCommand]
+    private Task ShowFavoritesAsync() => Shell.Current.GoToAsync(AppShell.FavoritesRoute);
 
     protected async Task RunSafeAsync(Func<Task> work)
     {

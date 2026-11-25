@@ -1,116 +1,116 @@
 using AuraScent.Atmospheres;
-using Microsoft.Maui.Controls.Shapes;
+using Microsoft.Maui.Dispatching;
+using System.Diagnostics;
 
 namespace AuraScent.Controls;
 
-public class AuroraBackground : ContentView
+public sealed class AuroraBackground : ContentView
 {
     public static readonly BindableProperty AtmosphereProperty = BindableProperty.Create(
-        nameof(Atmosphere), typeof(global::AuraScent.Atmospheres.Atmosphere), typeof(AuroraBackground), null,
-        propertyChanged: (b, _, n) =>
-        {
-            if (b is AuroraBackground bg) _ = bg.TransitionAsync(n as global::AuraScent.Atmospheres.Atmosphere);
-        });
+        nameof(Atmosphere), typeof(Atmosphere), typeof(AuroraBackground), null,
+        propertyChanged: (view, _, value) => ((AuroraBackground)view).SetAtmosphere((Atmosphere?)value));
 
-    private readonly Grid _stage = new() { IsClippedToBounds = true };
-    private readonly BoxView _sky = new();
-    private readonly Ellipse[] _orbs = new Ellipse[3];
-    private CancellationTokenSource? _cts;
+    private readonly GraphicsView _scene = new() { InputTransparent = true };
+    private readonly GraphicsView _outgoing = new() { InputTransparent = true, IsVisible = false };
+    private AtmosphereScene _drawing = new(AtmosphereCatalog.Default);
+    private IDispatcherTimer? _timer;
+    private long _startedAt;
+    private long _transitionAt;
+    private bool _motionRequested;
 
-    public global::AuraScent.Atmospheres.Atmosphere? Atmosphere
+    public Atmosphere? Atmosphere
     {
-        get => (global::AuraScent.Atmospheres.Atmosphere?)GetValue(AtmosphereProperty);
+        get => (Atmosphere?)GetValue(AtmosphereProperty);
         set => SetValue(AtmosphereProperty, value);
     }
 
     public AuroraBackground()
     {
         InputTransparent = true;
-        _stage.Add(_sky);
-
-        for (var i = 0; i < _orbs.Length; i++)
-        {
-            var size = 340 + i * 90;
-            _orbs[i] = new Ellipse
-            {
-                WidthRequest = size, HeightRequest = size,
-                HorizontalOptions = LayoutOptions.Center, VerticalOptions = LayoutOptions.Center,
-                Opacity = 0.6
-            };
-            _stage.Add(_orbs[i]);
-        }
-
-        Content = _stage;
-        Apply(AtmosphereCatalog.Default);
+        _scene.Drawable = _drawing;
+        Content = new Grid { IsClippedToBounds = true, Children = { _scene, _outgoing } };
     }
 
-    private void Apply(global::AuraScent.Atmospheres.Atmosphere? a)
+    public void SetMotionActive(bool active)
     {
-        a ??= AtmosphereCatalog.Default;
-
-        _sky.Background = new LinearGradientBrush(
-            new GradientStopCollection
-            {
-                new GradientStop(a.Top, 0f),
-                new GradientStop(a.Mid, 0.55f),
-                new GradientStop(a.Bottom, 1f)
-            },
-            new Point(0.2, 0), new Point(0.8, 1));
-
-        var colors = new[] { a.Accent, a.Glow, a.Mid };
-        for (var i = 0; i < _orbs.Length; i++)
-        {
-            _orbs[i].Fill = new RadialGradientBrush(
-                new GradientStopCollection
-                {
-                    new GradientStop(colors[i].WithAlpha(0.85f), 0f),
-                    new GradientStop(colors[i].WithAlpha(0f), 1f)
-                },
-                new Point(0.5, 0.5), 0.5);
-        }
+        _motionRequested = active;
+        if (active && Handler is not null && Motion.IsEnabled)
+            StartMotion();
+        else
+            StopMotion();
     }
 
-    private async Task TransitionAsync(global::AuraScent.Atmospheres.Atmosphere? a)
+    private void StopMotion()
     {
-        if (Handler is null) { Apply(a); return; }
-        await _stage.FadeTo(0.15, 250);
-        Apply(a);
-        await _stage.FadeTo(1, 700);
+        if (_timer is not null)
+        {
+            _timer.Stop();
+            _timer.Tick -= OnTick;
+            _timer = null;
+        }
+        EndTransition();
+    }
+
+    private void StartMotion()
+    {
+        if (_timer is not null) return;
+        _startedAt = Stopwatch.GetTimestamp();
+        _timer = Dispatcher.CreateTimer();
+        _timer.Interval = TimeSpan.FromMilliseconds(33);
+        _timer.Tick += OnTick;
+        _timer.Start();
+    }
+
+    protected override void OnHandlerChanging(HandlerChangingEventArgs args)
+    {
+        if (args.OldHandler is not null) StopMotion();
+        base.OnHandlerChanging(args);
     }
 
     protected override void OnHandlerChanged()
     {
         base.OnHandlerChanged();
-
-        _cts?.Cancel();
-        _cts = null;
-        foreach (var orb in _orbs) orb.CancelAnimations();
-
-        if (Handler is null) return;
-
-        _cts = new CancellationTokenSource();
-        for (var i = 0; i < _orbs.Length; i++) _ = DriftAsync(_orbs[i], i + 7, _cts.Token);
+        SetMotionActive(_motionRequested);
     }
 
-    private async Task DriftAsync(VisualElement orb, int seed, CancellationToken ct)
+    private void SetAtmosphere(Atmosphere? atmosphere)
     {
-        var rnd = new Random(seed * 31);
-        try
-        {
-            while (!ct.IsCancellationRequested)
-            {
-                var w = Width > 0 ? Width : 400;
-                var h = Height > 0 ? Height : 800;
-                var x = (rnd.NextDouble() - 0.5) * w;
-                var y = (rnd.NextDouble() - 0.5) * h * 0.9;
-                var scale = 0.8 + rnd.NextDouble() * 0.7;
-                var duration = (uint)rnd.Next(7000, 12000);
+        atmosphere ??= AtmosphereCatalog.Default;
+        if (_drawing.Atmosphere.GetType() == atmosphere.GetType()) return;
 
-                await Task.WhenAll(
-                    orb.TranslateTo(x, y, duration, Easing.SinInOut),
-                    orb.ScaleTo(scale, duration, Easing.SinInOut));
-            }
+        if (_timer is not null)
+        {
+            // Keep the dominant scene if a new result arrives mid-transition.
+            if (!_outgoing.IsVisible || _outgoing.Opacity <= 0.5)
+                _outgoing.Drawable = _drawing;
+
+            _outgoing.Opacity = 1;
+            _outgoing.IsVisible = true;
+            _outgoing.Invalidate();
+            _transitionAt = Stopwatch.GetTimestamp();
         }
-        catch (Exception) {}
+
+        _drawing = new AtmosphereScene(atmosphere);
+        _scene.Drawable = _drawing;
+        _scene.Invalidate();
+    }
+
+    private void OnTick(object? sender, EventArgs e)
+    {
+        _drawing.Seconds = (float)Stopwatch.GetElapsedTime(_startedAt).TotalSeconds;
+        _scene.Invalidate();
+
+        if (!_outgoing.IsVisible) return;
+        var progress = Stopwatch.GetElapsedTime(_transitionAt).TotalMilliseconds / 500;
+        if (progress >= 1)
+            EndTransition();
+        else
+            _outgoing.Opacity = 1 - Easing.SinInOut.Ease(progress);
+    }
+
+    private void EndTransition()
+    {
+        _outgoing.IsVisible = false;
+        _outgoing.Drawable = null;
     }
 }

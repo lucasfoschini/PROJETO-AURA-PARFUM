@@ -1,140 +1,170 @@
-<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <ContentPage x:Class="AuraScent.Views.DetailPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:vm="clr-namespace:AuraScent.ViewModels"
     xmlns:ctl="clr-namespace:AuraScent.Controls"
-    xmlns:m="clr-namespace:AuraScent.Models"
-    x:DataType="vm:DetailViewModel"
-    Shell.NavBarIsVisible="False"
-    BackgroundColor="{StaticResource Ink}">
+    x:DataType="vm:DetailViewModel" Shell.NavBarIsVisible="False" Shell.TabBarIsVisible="False"
+    SafeAreaEdges="All" Background="{DynamicResource AtmosphereBackdrop}">
 
-    <Grid>
-        <ctl:AuroraBackground Atmosphere="{Binding State.Current}" />
+    <ScrollView x:Name="DetailScroll" Scrolled="UpdateVisibleMotion">
+        <VerticalStackLayout x:Name="PageContent" Padding="16,12,16,28" MaximumWidthRequest="1120" Spacing="22">
+            <Button Text="‹  Voltar" Command="{Binding BackCommand}" Style="{StaticResource PillButton}" HorizontalOptions="Start" />
 
-        <ScrollView VerticalScrollBarVisibility="Never">
-            <VerticalStackLayout Padding="24,56,24,40" Spacing="24">
-
-                <Button Text="‹  Voltar" Command="{Binding BackCommand}" Style="{StaticResource PillButton}"
-                        HeightRequest="42" FontSize="13" Padding="20,0" HorizontalOptions="Start" />
-
-                <VerticalStackLayout x:Name="HeroBlock" Opacity="0" Spacing="6">
-                    <ctl:BottleView Perfume="{Binding Summary}" AnimateLiquid="True" HeightRequest="240" />
-
-                    <HorizontalStackLayout Spacing="8" HorizontalOptions="Center">
-                        <Image Source="{Binding CountryFlagUrl}" HeightRequest="18" WidthRequest="27"
-                               Aspect="AspectFit" IsVisible="{Binding CountryFlagUrl, Converter={StaticResource StringToBoolConverter}}" />
+            <Grid x:Name="HeroBlock" RowDefinitions="Auto,Auto" RowSpacing="16" ColumnSpacing="28">
+                <Border x:Name="BottlePanel" Style="{StaticResource Glass}" StrokeShape="RoundRectangle 24">
+                    <ctl:BottleView x:Name="Bottle" Perfume="{Binding Summary}" HeightRequest="256" />
+                </Border>
+                <VerticalStackLayout x:Name="IdentityBlock" Grid.Row="1" Spacing="9" VerticalOptions="Center">
+                    <HorizontalStackLayout Spacing="8">
+                        <Image Source="{Binding CountryFlagUrl}" HeightRequest="18" WidthRequest="27" Aspect="AspectFit"
+                               IsVisible="{Binding CountryFlagUrl, Converter={StaticResource StringToBoolConverter}}" />
                         <Label Text="{Binding Summary.House}" Style="{StaticResource Eyebrow}" />
                     </HorizontalStackLayout>
+                    <Label Text="{Binding Summary.Name}" Style="{StaticResource Headline}" SemanticProperties.HeadingLevel="Level1" />
 
-                    <Label Text="{Binding Summary.Name}" Style="{StaticResource Headline}" FontSize="40" />
-
-                    <HorizontalStackLayout Spacing="8" HorizontalOptions="Center">
-                        <Border Style="{StaticResource Chip}" HorizontalOptions="Start"
-                                IsVisible="{Binding Summary.DisplayFamily, Converter={StaticResource StringToBoolConverter}}">
-                            <Label Text="{Binding Summary.DisplayFamily}" TextColor="White" FontSize="13" />
+                    <FlexLayout Wrap="Wrap" AlignItems="Start">
+                        <Border Style="{StaticResource Chip}" Margin="0,0,6,6"
+                                IsVisible="{Binding PresentedFamily, Converter={StaticResource StringToBoolConverter}}">
+                            <Label Text="{Binding PresentedFamily}" Style="{StaticResource Caption}" />
                         </Border>
-                        <Border Style="{StaticResource Chip}" HorizontalOptions="Start"
+                        <Border Style="{StaticResource Chip}" Margin="0,0,6,6"
                                 IsVisible="{Binding EnrichedConcentration, Converter={StaticResource StringToBoolConverter}}">
-                            <Label Text="{Binding EnrichedConcentration}" TextColor="White" FontSize="13" />
+                            <Label Text="{Binding EnrichedConcentration}" Style="{StaticResource Caption}" />
                         </Border>
-                        <Border Style="{StaticResource Chip}" HorizontalOptions="Start"
+                        <Border Style="{StaticResource Chip}" Margin="0,0,6,6"
                                 IsVisible="{Binding EnrichedGender, Converter={StaticResource StringToBoolConverter}}">
-                            <Label Text="{Binding EnrichedGender}" TextColor="White" FontSize="13" />
+                            <Label Text="{Binding EnrichedGender}" Style="{StaticResource Caption}" />
                         </Border>
-                    </HorizontalStackLayout>
+                    </FlexLayout>
 
-                    <Label Text="{Binding Lede}" Style="{StaticResource Body}" Margin="0,12,0,0"
-                           IsVisible="{Binding Lede, Converter={StaticResource StringToBoolConverter}}" />
+                    <Label Text="{Binding PresentedDescription}" Style="{StaticResource Body}"
+                           IsVisible="{Binding PresentedDescription, Converter={StaticResource StringToBoolConverter}}" />
+                    <Label Text="{Binding PresentedCharacter}" Style="{StaticResource Body}"
+                           IsVisible="{Binding PresentedCharacter, Converter={StaticResource StringToBoolConverter}}" />
 
-                    <Label Text="{Binding TranslatedLede}" Style="{StaticResource Body}"
-                           TextColor="{StaticResource Accent}" FontAttributes="Italic"
-                           IsVisible="{Binding TranslatedLede, Converter={StaticResource StringToBoolConverter}}" />
-
-                    <Label Text="{Binding EnrichedCharacter}" Style="{StaticResource Body}"
-                           Margin="0,4,0,0"
-                           IsVisible="{Binding EnrichedCharacter, Converter={StaticResource StringToBoolConverter}}" />
+                    <FlexLayout Wrap="Wrap" AlignItems="Start" Margin="0,4,0,0">
+                        <Button Text="Ver notas" Style="{StaticResource PrimaryButton}" Clicked="ShowLayers"
+                                IsVisible="{Binding HasLayers}" Margin="0,0,8,6" />
+                        <Button x:Name="FavoriteButton" Text="{Binding FavoriteButtonText}"
+                                SemanticProperties.Description="{Binding FavoriteActionDescription}"
+                                Command="{Binding ToggleFavoriteCommand}" Clicked="AnimateFavorite"
+                                Style="{StaticResource PillButton}" Margin="0,0,0,6">
+                            <Button.Triggers>
+                                <DataTrigger TargetType="Button" Binding="{Binding IsFavorite}" Value="True">
+                                    <Setter Property="BorderColor" Value="{DynamicResource Accent}" />
+                                    <Setter Property="TextColor" Value="{DynamicResource Accent}" />
+                                    <Setter Property="BackgroundColor" Value="{DynamicResource AccentGlass}" />
+                                </DataTrigger>
+                            </Button.Triggers>
+                        </Button>
+                    </FlexLayout>
                 </VerticalStackLayout>
+            </Grid>
 
-                <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" Color="{StaticResource Accent}" HorizontalOptions="Start" />
-                <Label Text="{Binding ErrorMessage}" IsVisible="{Binding HasError}" TextColor="#FF9A9A" />
+            <HorizontalStackLayout Spacing="8" IsVisible="{Binding IsBusy}">
+                <ActivityIndicator IsRunning="{Binding IsBusy}" Color="{DynamicResource Accent}" HeightRequest="24" WidthRequest="24" />
+                <Label Text="Consultando dados do perfume…" Style="{StaticResource Body}" VerticalOptions="Center" />
+            </HorizontalStackLayout>
+            <Border Style="{StaticResource Glass}" Padding="14" IsVisible="{Binding HasError}">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="{Binding ErrorMessage}" Style="{StaticResource Body}" TextColor="{StaticResource ErrorColor}" />
+                    <Button Text="Tentar novamente" Command="{Binding LoadCommand}" Style="{StaticResource PillButton}" HorizontalOptions="Start" />
+                </VerticalStackLayout>
+            </Border>
 
-                <VerticalStackLayout x:Name="LayersBlock" Opacity="0" Spacing="14"
-                                     BindableLayout.ItemsSource="{Binding Layers}">
+            <VerticalStackLayout x:Name="LayersBlock" Spacing="10">
+                <Label Text="Da primeira impressão ao rastro" Style="{StaticResource Eyebrow}" />
+                <Label x:Name="LayersHeading" Text="Pirâmide olfativa" Style="{StaticResource Title}" SemanticProperties.HeadingLevel="Level2" />
+                <Label Text="As fontes consultadas não informaram as notas deste perfume."
+                       Style="{StaticResource Body}" IsVisible="{Binding ShowNoLayers}" />
+
+                <VerticalStackLayout Spacing="10" BindableLayout.ItemsSource="{Binding Layers}">
                     <BindableLayout.ItemTemplate>
                         <DataTemplate x:DataType="vm:NoteLayerDisplay">
-                            <Border Style="{StaticResource Glass}" Padding="20">
-                                <VerticalStackLayout Spacing="12">
-                                    <Label Text="{Binding Name}" Style="{StaticResource Eyebrow}" />
-                                    <FlexLayout Wrap="Wrap" Direction="Row" JustifyContent="Start" AlignItems="Start"
-                                                BindableLayout.ItemsSource="{Binding Notes}">
-                                        <BindableLayout.ItemTemplate>
-                                            <DataTemplate x:DataType="vm:NoteItemViewModel">
-                                                <Border Style="{StaticResource Chip}" Padding="14,10" Margin="0,0,8,8" MinimumHeightRequest="44">
-                                                    <Label Text="{Binding Name}" TextColor="White" FontSize="14" VerticalOptions="Center" />
-                                                </Border>
-                                            </DataTemplate>
-                                        </BindableLayout.ItemTemplate>
-                                    </FlexLayout>
-                                </VerticalStackLayout>
+                            <Border Style="{StaticResource Glass}" Padding="14">
+                                <Grid ColumnDefinitions="38,*" ColumnSpacing="12">
+                                    <Border Style="{StaticResource Chip}" Stroke="{DynamicResource Accent}"
+                                            BackgroundColor="{DynamicResource AccentGlass}" Padding="0" HeightRequest="38" VerticalOptions="Start">
+                                        <Label Text="{Binding StageIcon}" TextColor="{DynamicResource Accent}" FontSize="19"
+                                               HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
+                                    </Border>
+                                    <VerticalStackLayout Grid.Column="1" Spacing="7">
+                                        <Label Text="{Binding Name}" Style="{StaticResource CardTitle}" SemanticProperties.HeadingLevel="Level3" />
+                                        <Label Text="{Binding StageDescription}" Style="{StaticResource Caption}"
+                                               IsVisible="{Binding StageDescription, Converter={StaticResource StringToBoolConverter}}" />
+                                        <FlexLayout Wrap="Wrap" AlignItems="Start" BindableLayout.ItemsSource="{Binding Notes}">
+                                            <BindableLayout.ItemTemplate>
+                                                <DataTemplate x:DataType="vm:NoteItemViewModel">
+                                                    <Border Style="{StaticResource Chip}" Margin="0,0,6,6">
+                                                        <Label Text="{Binding Name}" Style="{StaticResource Caption}" TextColor="{StaticResource TextPrimary}" />
+                                                    </Border>
+                                                </DataTemplate>
+                                            </BindableLayout.ItemTemplate>
+                                        </FlexLayout>
+                                    </VerticalStackLayout>
+                                </Grid>
                             </Border>
                         </DataTemplate>
                     </BindableLayout.ItemTemplate>
                 </VerticalStackLayout>
-
-                <VerticalStackLayout Spacing="12" IsVisible="{Binding HasEnrichedData}">
-
-                    <Border Style="{StaticResource Glass}" Padding="20"
-                            IsVisible="{Binding AccordsText, Converter={StaticResource StringToBoolConverter}}">
-                        <VerticalStackLayout Spacing="6">
-                            <Label Text="Acordes" Style="{StaticResource Eyebrow}" />
-                            <Label Text="{Binding AccordsText}" Style="{StaticResource Title}" LineHeight="1.3" />
-                        </VerticalStackLayout>
-                    </Border>
-
-                    <Border Style="{StaticResource Glass}" Padding="20"
-                            IsVisible="{Binding PerfumersText, Converter={StaticResource StringToBoolConverter}}">
-                        <VerticalStackLayout Spacing="6">
-                            <Label Text="Perfumista(s)" Style="{StaticResource Eyebrow}" />
-                            <Label Text="{Binding PerfumersText}" Style="{StaticResource Title}" />
-                        </VerticalStackLayout>
-                    </Border>
-
-                    <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
-                        <Border Style="{StaticResource Glass}" Padding="12,18"
-                                IsVisible="{Binding LongevityText, Converter={StaticResource StringToBoolConverter}}">
-                            <VerticalStackLayout Spacing="6" HorizontalOptions="Center"><Label Text="Longevidade" Style="{StaticResource Eyebrow}" HorizontalTextAlignment="Center" /><Label Text="{Binding LongevityText}" FontSize="26" CharacterSpacing="2" TextColor="{StaticResource Accent}" HorizontalTextAlignment="Center" /></VerticalStackLayout>
-                        </Border>
-                        <Border Grid.Column="1" Style="{StaticResource Glass}" Padding="12,18"
-                                IsVisible="{Binding ProjectionText, Converter={StaticResource StringToBoolConverter}}">
-                            <VerticalStackLayout Spacing="6" HorizontalOptions="Center"><Label Text="Projeção" Style="{StaticResource Eyebrow}" HorizontalTextAlignment="Center" /><Label Text="{Binding ProjectionText}" FontSize="26" CharacterSpacing="2" TextColor="{StaticResource Accent}" HorizontalTextAlignment="Center" /></VerticalStackLayout>
-                        </Border>
-                    </Grid>
-
-                    <Border Style="{StaticResource Glass}" Padding="20"
-                            IsVisible="{Binding SeasonsText, Converter={StaticResource StringToBoolConverter}}">
-                        <VerticalStackLayout Spacing="6">
-                            <Label Text="Estações ideais" Style="{StaticResource Eyebrow}" />
-                            <Label Text="{Binding SeasonsText}" Style="{StaticResource Title}" />
-                        </VerticalStackLayout>
-                    </Border>
-                </VerticalStackLayout>
-
-                <ActivityIndicator IsRunning="{Binding IsEnriching}" IsVisible="{Binding IsEnriching}"
-                                   Color="{StaticResource Accent}" HorizontalOptions="Start"
-                                   HeightRequest="24" WidthRequest="24" />
-
-                <VerticalStackLayout Spacing="12">
-                    <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
-                        <Button Text="{Binding FavoriteLabel}"
-                                Command="{Binding ToggleFavoriteCommand}" Style="{StaticResource PrimaryButton}" />
-                        <Button Grid.Column="1" Text="Ver no Scento" Command="{Binding OpenScentoCommand}" Style="{StaticResource PillButton}" />
-                    </Grid>
-                    <Button Text="Ver na 10ML" Command="{Binding OpenTenMlCommand}" Style="{StaticResource PillButton}"
-                            IsVisible="{Binding TenMlUrl, Converter={StaticResource StringToBoolConverter}}" />
-                </VerticalStackLayout>
-
             </VerticalStackLayout>
-        </ScrollView>
-    </Grid>
+
+            <HorizontalStackLayout Spacing="8" IsVisible="{Binding IsEnriching}">
+                <ActivityIndicator IsRunning="{Binding IsEnriching}" Color="{DynamicResource Accent}" HeightRequest="24" WidthRequest="24" />
+                <Label Text="Consultando dados adicionais e traduções…" Style="{StaticResource Body}" VerticalOptions="Center" />
+            </HorizontalStackLayout>
+            <Label Text="{Binding EnrichmentStatus}" Style="{StaticResource Caption}"
+                   IsVisible="{Binding EnrichmentStatus, Converter={StaticResource StringToBoolConverter}}" />
+
+            <VerticalStackLayout Spacing="8" IsVisible="{Binding HasEnrichedData}">
+                <Border Style="{StaticResource Glass}" Padding="16"
+                        IsVisible="{Binding AccordsText, Converter={StaticResource StringToBoolConverter}}">
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="Acordes principais" Style="{StaticResource Eyebrow}" />
+                        <Label Text="{Binding AccordsText}" Style="{StaticResource CardTitle}" />
+                    </VerticalStackLayout>
+                </Border>
+                <Border Style="{StaticResource Glass}" Padding="16"
+                        IsVisible="{Binding PerfumersText, Converter={StaticResource StringToBoolConverter}}">
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="Perfumistas" Style="{StaticResource Eyebrow}" />
+                        <Label Text="{Binding PerfumersText}" Style="{StaticResource CardTitle}" />
+                    </VerticalStackLayout>
+                </Border>
+                <Border Style="{StaticResource Glass}" Padding="16"
+                        IsVisible="{Binding SeasonsText, Converter={StaticResource StringToBoolConverter}}">
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="Estações ideais" Style="{StaticResource Eyebrow}" />
+                        <Label Text="{Binding SeasonsText}" Style="{StaticResource CardTitle}" />
+                    </VerticalStackLayout>
+                </Border>
+                <FlexLayout Wrap="Wrap" AlignItems="Start">
+                    <Border Style="{StaticResource Glass}" Padding="16" Margin="0,0,8,8"
+                            IsVisible="{Binding LongevityText, Converter={StaticResource StringToBoolConverter}}">
+                        <VerticalStackLayout Spacing="5">
+                            <Label Text="Longevidade" Style="{StaticResource Eyebrow}" />
+                            <Label Text="{Binding LongevityText}" TextColor="{DynamicResource Accent}"
+                                   SemanticProperties.Description="{Binding LongevityDescription}" />
+                        </VerticalStackLayout>
+                    </Border>
+                    <Border Style="{StaticResource Glass}" Padding="16" Margin="0,0,8,8"
+                            IsVisible="{Binding ProjectionText, Converter={StaticResource StringToBoolConverter}}">
+                        <VerticalStackLayout Spacing="5">
+                            <Label Text="Projeção" Style="{StaticResource Eyebrow}" />
+                            <Label Text="{Binding ProjectionText}" TextColor="{DynamicResource Accent}"
+                                   SemanticProperties.Description="{Binding ProjectionDescription}" />
+                        </VerticalStackLayout>
+                    </Border>
+                </FlexLayout>
+            </VerticalStackLayout>
+
+            <FlexLayout Wrap="Wrap" AlignItems="Start">
+                <Button Text="Ver no Scento" Command="{Binding OpenScentoCommand}" Style="{StaticResource PillButton}" Margin="0,0,8,6"
+                        IsVisible="{Binding ScentoUrl, Converter={StaticResource StringToBoolConverter}}" />
+                <Button Text="Ver na 10ML" Command="{Binding OpenTenMlCommand}" Style="{StaticResource PillButton}" Margin="0,0,0,6"
+                        IsVisible="{Binding TenMlUrl, Converter={StaticResource StringToBoolConverter}}" />
+            </FlexLayout>
+        </VerticalStackLayout>
+    </ScrollView>
 </ContentPage>

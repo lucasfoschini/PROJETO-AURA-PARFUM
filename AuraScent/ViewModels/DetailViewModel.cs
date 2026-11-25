@@ -19,7 +19,26 @@ public sealed partial class NoteItemViewModel : ObservableObject
     }
 }
 
-public sealed record NoteLayerDisplay(string Name, IReadOnlyList<NoteItemViewModel> Notes);
+public sealed record NoteLayerDisplay(string Name, IReadOnlyList<NoteItemViewModel> Notes)
+{
+    private int Stage => Name.ToLowerInvariant() switch
+    {
+        "notas de topo" => 0,
+        "notas de coração" => 1,
+        "notas de fundo" => 2,
+        _ => 3
+    };
+
+    public string StageIcon => Stage switch { 0 => "◇", 1 => "✧", 2 => "◆", _ => "·" };
+
+    public string StageDescription => Stage switch
+    {
+        0 => "A abertura da fragrância",
+        1 => "O caráter da composição",
+        2 => "O rastro que permanece na pele",
+        _ => ""
+    };
+}
 
 public partial class DetailViewModel : BaseViewModel, IQueryAttributable
 {
@@ -27,30 +46,52 @@ public partial class DetailViewModel : BaseViewModel, IQueryAttributable
     private readonly IFavoritesService _favorites;
     private readonly IApisExtrasService _extras;
     private PerfumeDetail? _detail;
+    private string _enrichmentStatus = "";
 
     public ObservableCollection<NoteLayerDisplay> Layers { get; } = new();
 
-    [ObservableProperty] private PerfumeSummary? _summary;
-    [ObservableProperty] private string _lede = "";
-    [ObservableProperty] private string _translatedLede = "";
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(PresentedFamily), nameof(ScentoUrl))]
+    private PerfumeSummary? _summary;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(PresentedDescription), nameof(PresentedCharacter))]
+    private string _lede = "";
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(PresentedDescription), nameof(PresentedCharacter))]
+    private string _translatedLede = "";
     [ObservableProperty] private string _countryFlagUrl = "";
-    [ObservableProperty] private string _enrichedCharacter = "";
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(PresentedCharacter))]
+    private string _enrichedCharacter = "";
     [ObservableProperty] private string _enrichedConcentration = "";
     [ObservableProperty] private string _enrichedGender = "";
-    [ObservableProperty] private string _enrichedFamily = "";
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(PresentedFamily))]
+    private string _enrichedFamily = "";
     [ObservableProperty] private string _accordsText = "";
     [ObservableProperty] private string _perfumersText = "";
     [ObservableProperty] private string _seasonsText = "";
-    [ObservableProperty] private string _longevityText = "";
-    [ObservableProperty] private string _projectionText = "";
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(LongevityDescription))] private string _longevityText = "";
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(ProjectionDescription))] private string _projectionText = "";
     [ObservableProperty] private string _tenMlUrl = "";
     [ObservableProperty] private bool _hasEnrichedData;
-    [ObservableProperty] private bool _isEnriching;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(ShowNoLayers))] private bool _isEnriching;
 
-    [ObservableProperty, NotifyPropertyChangedFor(nameof(FavoriteLabel))]
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(FavoriteLabel), nameof(FavoriteButtonText), nameof(FavoriteActionDescription))]
     private bool _isFavorite;
 
     public string FavoriteLabel => IsFavorite ? "Nos favoritos" : "Favoritar";
+    public string FavoriteButtonText => $"{(IsFavorite ? '♥' : '♡')}  {FavoriteLabel}";
+    public string FavoriteActionDescription => IsFavorite ? "Remover dos favoritos" : "Adicionar aos favoritos";
+    public string PresentedFamily => string.IsNullOrWhiteSpace(EnrichedFamily) ? Summary?.Family ?? "" : EnrichedFamily;
+    public string PresentedDescription => string.IsNullOrWhiteSpace(TranslatedLede) ? Lede : TranslatedLede;
+    public string PresentedCharacter => string.Equals(EnrichedCharacter, PresentedDescription, StringComparison.OrdinalIgnoreCase)
+        ? "" : EnrichedCharacter;
+    public bool HasLayers => Layers.Count > 0;
+    public bool ShowNoLayers => _detail is not null && !HasLayers && !IsBusy && !IsEnriching;
+    public string ScentoUrl => WebLink(_detail?.ScentoUrl ?? Summary?.PageUrl);
+    public string LongevityDescription => DescribeRating(LongevityText);
+    public string ProjectionDescription => DescribeRating(ProjectionText);
+    public string EnrichmentStatus
+    {
+        get => _enrichmentStatus;
+        private set => SetProperty(ref _enrichmentStatus, value);
+    }
 
     public DetailViewModel(IPerfumeService perfumes, IFavoritesService favorites, AtmosphereState state, INavigationService navigation, IApisExtrasService extras)
         : base(state, navigation)
@@ -58,6 +99,17 @@ public partial class DetailViewModel : BaseViewModel, IQueryAttributable
         _perfumes = perfumes;
         _favorites = favorites;
         _extras = extras;
+        Layers.CollectionChanged += (_, _) =>
+        {
+            OnPropertyChanged(nameof(HasLayers));
+            OnPropertyChanged(nameof(ShowNoLayers));
+        };
+    }
+
+    protected override void OnPropertyChanged(System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        base.OnPropertyChanged(e);
+        if (e.PropertyName == nameof(IsBusy)) OnPropertyChanged(nameof(ShowNoLayers));
     }
 
     public void ApplyQueryAttributes(IDictionary<string, object> query)
@@ -78,6 +130,7 @@ public partial class DetailViewModel : BaseViewModel, IQueryAttributable
         {
             _detail = await _perfumes.GetDetailAsync(Summary);
             Lede = _detail.Lede;
+            OnPropertyChanged(nameof(ScentoUrl));
 
             SetLayers(_detail.Layers);
 
@@ -102,6 +155,7 @@ public partial class DetailViewModel : BaseViewModel, IQueryAttributable
     {
         if (Summary is null) return;
         IsEnriching = true;
+        EnrichmentStatus = "";
 
         try
         {
@@ -152,20 +206,18 @@ public partial class DetailViewModel : BaseViewModel, IQueryAttributable
         try
         {
             var data = await _extras.GetEnrichedDataAsync(Summary.Name, Summary.House);
-            if (string.IsNullOrEmpty(data.Name)) return;
+            if (string.IsNullOrEmpty(data.Name))
+            {
+                EnrichmentStatus = "A 10ML não retornou dados adicionais para este perfume.";
+                return;
+            }
 
             HasEnrichedData = true;
-
-            if (!string.IsNullOrWhiteSpace(data.Character))
-            {
-                var translatedChar = await _extras.TranslateToPortugueseAsync(data.Character);
-                EnrichedCharacter = translatedChar;
-            }
 
             EnrichedConcentration = data.Concentration ?? "";
             EnrichedGender = TranslateGender(data.Gender);
             EnrichedFamily = data.Family ?? "";
-            TenMlUrl = data.TenMlUrl ?? "";
+            TenMlUrl = WebLink(data.TenMlUrl);
 
             if (data.Accords.Count > 0)
                 AccordsText = string.Join("  ·  ", data.Accords.Select(NoteTranslator.Translate));
@@ -191,9 +243,16 @@ public partial class DetailViewModel : BaseViewModel, IQueryAttributable
 
                 await MainThread.InvokeOnMainThreadAsync(() => SetLayers(extra));
             }
+
+            if (!string.IsNullOrWhiteSpace(data.Character))
+            {
+                EnrichedCharacter = data.Character;
+                EnrichedCharacter = await _extras.TranslateToPortugueseAsync(data.Character);
+            }
         }
         catch (Exception)
         {
+            if (!HasEnrichedData) EnrichmentStatus = "Não foi possível consultar os dados adicionais da 10ML.";
         }
     }
 
@@ -254,9 +313,14 @@ public partial class DetailViewModel : BaseViewModel, IQueryAttributable
 
     private static string FormatRating(int value)
     {
-        var stars = new string('★', Math.Min(value, 5)) + new string('☆', Math.Max(0, 5 - value));
-        return stars;
+        var stars = Math.Clamp(value, 0, 5);
+        return new string('★', stars) + new string('☆', 5 - stars);
     }
+
+    private static string DescribeRating(string rating) => $"{rating.Count(c => c == '★')} de 5";
+
+    private static string WebLink(string? link) =>
+        Uri.TryCreate(link, UriKind.Absolute, out var uri) && uri.Scheme is "https" or "http" ? uri.AbsoluteUri : "";
 
     public void SetCountryFlag(string countryCode)
     {
@@ -274,8 +338,7 @@ public partial class DetailViewModel : BaseViewModel, IQueryAttributable
     [RelayCommand]
     private async Task OpenScentoAsync()
     {
-        var url = _detail?.ScentoUrl ?? Summary?.PageUrl;
-        if (!string.IsNullOrWhiteSpace(url)) await Launcher.Default.OpenAsync(url);
+        if (ScentoUrl is { Length: > 0 } url) await Launcher.Default.OpenAsync(url);
     }
 
     [RelayCommand]

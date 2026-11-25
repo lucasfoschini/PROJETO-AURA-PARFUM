@@ -2,13 +2,50 @@ namespace AuraScent.Controls;
 
 public static class Motion
 {
-    public static async Task RevealAsync(this VisualElement view, int delayMs = 0, uint duration = 750)
+    private const string RevealAnimation = "aura-reveal";
+
+    public static bool IsEnabled
     {
-        view.Opacity = 0;
-        view.TranslationY = 28;
-        if (delayMs > 0) await Task.Delay(delayMs);
-        await Task.WhenAll(
-            view.FadeTo(1, duration, Easing.CubicOut),
-            view.TranslateTo(0, 0, duration, Easing.CubicOut));
+        get
+        {
+#if WINDOWS
+            return new Windows.UI.ViewManagement.UISettings().AnimationsEnabled;
+#elif ANDROID
+            return OperatingSystem.IsAndroidVersionAtLeast(26)
+                && Android.Animation.ValueAnimator.AreAnimatorsEnabled();
+#elif IOS || MACCATALYST
+            return !UIKit.UIAccessibility.IsReduceMotionEnabled;
+#else
+            return false;
+#endif
+        }
+    }
+
+    public static void Reveal(this VisualElement view, uint delay = 0, double travel = 12)
+    {
+        if (view.Handler is null || !IsEnabled) return;
+
+        const double startOpacity = 0.6;
+        const uint duration = 280;
+        view.AbortAnimation(RevealAnimation);
+        view.Opacity = startOpacity;
+        view.TranslationY = travel;
+
+        var sequence = new Animation();
+        sequence.Add((double)delay / (delay + duration), 1, new Animation(progress =>
+        {
+            view.Opacity = startOpacity + (1 - startOpacity) * progress;
+            view.TranslationY = travel * (1 - progress);
+        }, easing: Easing.CubicOut));
+        sequence.Commit(view, RevealAnimation, length: delay + duration);
+    }
+
+    public static void ResetMotion(this VisualElement view)
+    {
+        view.AbortAnimation(RevealAnimation);
+        view.CancelAnimations();
+        view.Opacity = 1;
+        view.TranslationY = 0;
+        view.Scale = 1;
     }
 }

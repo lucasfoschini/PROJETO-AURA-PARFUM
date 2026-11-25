@@ -11,22 +11,29 @@ public partial class HomeViewModel : BaseViewModel
     private readonly RecommendationService _recommendations;
     private readonly IWeatherService _weather;
     private readonly IApisExtrasService _extras;
+    private CancellationTokenSource? _citySearchCts;
+    private CancellationTokenSource? _loadCts;
+    private CitySuggestion? _selectedCity;
+    private WeatherSnapshot? _displayedWeather;
+    private bool _selectingCity;
 
     public ObservableCollection<PerfumeSummary> Recommendations { get; } = new();
     public ObservableCollection<CitySuggestion> CitySuggestions { get; } = new();
 
     [ObservableProperty] private string _city = "São Paulo";
-    [ObservableProperty] private string _temperatureText = "--°";
-    [ObservableProperty] private string _weatherSummary = "Sentindo o clima…";
+    [ObservableProperty] private string _temperatureText = "";
+    [ObservableProperty] private string _weatherSummary = "";
     [ObservableProperty] private bool _showCitySuggestions;
     [ObservableProperty] private string _countryFlagUrl = "";
+    public string? DisplayCity => _displayedWeather?.City;
+    public string? DisplayCountry => _displayedWeather?.Country;
+    public string CurrentCountryCode => _displayedWeather?.CountryCode ?? "";
+    public string AtmosphereTitle => NoteTranslator.Capitalize(State.Current.Name);
+    public bool HasWeather => _displayedWeather is not null;
+    public string LoadingText => HasWeather ? "Atualizando o clima e a curadoria…" : "Consultando o clima e a curadoria…";
 
-    private CancellationTokenSource? _citySearchCts;
-    private CitySuggestion? _selectedCity;
-    private bool _selectingCity;
-    private string _currentCountryCode = "";
-
-    public HomeViewModel(RecommendationService recommendations, IWeatherService weather, AtmosphereState state, INavigationService navigation, IApisExtrasService extras)
+    public HomeViewModel(RecommendationService recommendations, IWeatherService weather, AtmosphereState state,
+        INavigationService navigation, IApisExtrasService extras)
         : base(state, navigation)
     {
         _recommendations = recommendations;
@@ -34,25 +41,25 @@ public partial class HomeViewModel : BaseViewModel
         _extras = extras;
     }
 
-    public string CurrentCountryCode => _currentCountryCode;
-
     partial void OnCityChanged(string value)
     {
         _selectedCity = null;
+        ClearCitySuggestions();
+        if (!_selectingCity && value?.Trim().Length >= 2)
+            _ = LoadCitySuggestionsAsync(value);
+    }
+
+    private void ClearCitySuggestions()
+    {
         _citySearchCts?.Cancel();
         CitySuggestions.Clear();
         ShowCitySuggestions = false;
-
-        if (_selectingCity || value.Trim().Length < 2) return;
-        _ = LoadCitySuggestionsAsync(value);
     }
 
     private async Task LoadCitySuggestionsAsync(string query)
     {
-        var cts = new CancellationTokenSource();
-        var previous = _citySearchCts;
+        using var cts = new CancellationTokenSource();
         _citySearchCts = cts;
-        previous?.Cancel();
 
         try
         {
@@ -64,52 +71,77 @@ public partial class HomeViewModel : BaseViewModel
             ShowCitySuggestions = CitySuggestions.Count > 0;
         }
         catch (OperationCanceledException) { }
-        catch (ApiException)
-        {
-            if (!cts.IsCancellationRequested) ShowCitySuggestions = false;
-        }
+        catch (ApiException) { }
         finally
         {
             if (ReferenceEquals(_citySearchCts, cts)) _citySearchCts = null;
-            cts.Dispose();
         }
     }
 
-    [RelayCommand]
-    private async Task SelectCityAsync(CitySuggestion? city)
+    [RelayCommand(AllowConcurrentExecutions = true)]
+    private Task SelectCityAsync(CitySuggestion? city)
     {
-        if (city is null) return;
+        if (city is null) return Task.CompletedTask;
 
         _selectingCity = true;
         City = city.Name;
         _selectingCity = false;
         _selectedCity = city;
-        _citySearchCts?.Cancel();
-        CitySuggestions.Clear();
-        ShowCitySuggestions = false;
-        await LoadAsync();
+        return LoadAsync();
     }
 
-    [RelayCommand]
+    [RelayCommand(AllowConcurrentExecutions = true)]
     private async Task LoadAsync()
     {
-        if (IsBusy) return;
-        await RunSafeAsync(async () =>
+        ClearCitySuggestions();
+        using var cts = new CancellationTokenSource();
+        var previous = _loadCts;
+        _loadCts = cts;
+        previous?.Cancel();
+
+        var city = City;
+        var selectedCity = _selectedCity;
+        IsBusy = true;
+        ErrorMessage = null;
+
+        try
         {
-            var result = _selectedCity is null
-                ? await _recommendations.GetAsync(City)
-                : await _recommendations.GetAsync(_selectedCity);
+            var result = selectedCity is null
+                ? await _recommendations.GetAsync(city, cts.Token)
+                : await _recommendations.GetAsync(selectedCity, cts.Token);
+            if (cts.IsCancellationRequested) return;
 
-            State.Current = result.Atmosphere;
+            _displayedWeather = result.Weather;
             TemperatureText = $"{Math.Round(result.Weather.TemperatureC)}°";
-            WeatherSummary = $"{result.Weather.Description} · {result.Weather.City}";
-
-            _currentCountryCode = result.Weather.CountryCode;
-            CountryFlagUrl = _extras.GetCountryFlagUrl(_currentCountryCode);
+            WeatherSummary = result.Weather.Description;
+            CountryFlagUrl = _extras.GetCountryFlagUrl(CurrentCountryCode);
+            State.Current = result.Atmosphere;
 
             Recommendations.Clear();
-            foreach (var p in result.Perfumes) Recommendations.Add(p);
-        });
+            foreach (var perfume in result.Perfumes) Recommendations.Add(perfume);
+            OnPropertyChanged(nameof(DisplayCity));
+            OnPropertyChanged(nameof(DisplayCountry));
+            OnPropertyChanged(nameof(AtmosphereTitle));
+            OnPropertyChanged(nameof(HasWeather));
+            OnPropertyChanged(nameof(LoadingText));
+        }
+        catch (OperationCanceledException) when (cts.IsCancellationRequested) { }
+        catch (ApiException ex)
+        {
+            if (!cts.IsCancellationRequested) ErrorMessage = ex.Message;
+        }
+        catch (Exception)
+        {
+            if (!cts.IsCancellationRequested) ErrorMessage = "Não foi possível atualizar o clima e a curadoria.";
+        }
+        finally
+        {
+            if (ReferenceEquals(_loadCts, cts))
+            {
+                _loadCts = null;
+                IsBusy = false;
+            }
+        }
     }
 
     [RelayCommand]

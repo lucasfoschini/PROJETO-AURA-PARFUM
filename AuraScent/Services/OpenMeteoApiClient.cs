@@ -14,9 +14,6 @@ public sealed class OpenMeteoApiClient : ApiClientBase, IWeatherService
         return await GetCurrentAsync(location, ct);
     }
 
-    public Task<WeatherSnapshot> GetCurrentAsync(CitySuggestion city, CancellationToken ct = default) =>
-        GetCurrentAsync((city.Name, city.Latitude, city.Longitude, city.CountryCode), ct);
-
     public async Task<IReadOnlyList<CitySuggestion>> SearchCitiesAsync(string query, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(query)) return Array.Empty<CitySuggestion>();
@@ -39,12 +36,10 @@ public sealed class OpenMeteoApiClient : ApiClientBase, IWeatherService
             .ToArray();
     }
 
-    private async Task<WeatherSnapshot> GetCurrentAsync((string Name, double Lat, double Lon, string CountryCode) location, CancellationToken ct)
+    public async Task<WeatherSnapshot> GetCurrentAsync(CitySuggestion city, CancellationToken ct = default)
     {
-        var (name, lat, lon, countryCode) = location;
-
         var inv = System.Globalization.CultureInfo.InvariantCulture;
-        var url = $"https://api.open-meteo.com/v1/forecast?latitude={lat.ToString(inv)}&longitude={lon.ToString(inv)}" +
+        var url = $"https://api.open-meteo.com/v1/forecast?latitude={city.Latitude.ToString(inv)}&longitude={city.Longitude.ToString(inv)}" +
                   "&current=temperature_2m,relative_humidity_2m,weather_code,is_day&timezone=auto";
 
         using var doc = await GetJsonAsync(url, ct);
@@ -52,22 +47,18 @@ public sealed class OpenMeteoApiClient : ApiClientBase, IWeatherService
             ?? throw new ApiException(ServiceName, "Open-Meteo não devolveu o clima atual.");
 
         return new WeatherSnapshot(
-            name,
+            city.Name,
             current.Dbl("temperature_2m"),
             (int)current.Dbl("weather_code"),
             current.Dbl("is_day", 1) >= 1,
             (int)current.Dbl("relative_humidity_2m"),
-            countryCode);
+            city.CountryCode) { Country = city.Country };
     }
 
-    private async Task<(string Name, double Lat, double Lon, string CountryCode)> GeocodeAsync(string city, CancellationToken ct)
+    private async Task<CitySuggestion> GeocodeAsync(string city, CancellationToken ct)
     {
         var results = await SearchCitiesAsync(city, ct);
-        if (results.Count > 0)
-        {
-            var first = results[0];
-            return (first.Name, first.Latitude, first.Longitude, first.CountryCode);
-        }
+        if (results.Count > 0) return results[0];
 
         throw new ApiException(ServiceName, "N\u00e3o encontrei a cidade \u201c" + city + "\u201d.");
     }
