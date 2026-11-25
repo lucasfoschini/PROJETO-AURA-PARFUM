@@ -41,3 +41,8 @@ AppPackages/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Pastas fora do projeto do app
+/files/
+/docs/
+/Microsoft/

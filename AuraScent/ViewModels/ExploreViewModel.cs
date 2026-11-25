@@ -58,16 +58,66 @@ public partial class ExploreViewModel : BaseViewModel
 
     partial void OnQueryChanged(string value)
     {
-        if (!_suppressQuerySuggestions) _ = LoadSuggestionsAsync(value);
+        if (_suppressQuerySuggestions) return;
+
+        if (string.IsNullOrEmpty(value))
+        {
+            LimpaForm();
+            return;
+        }
+
+        var query = GetForm();
+        if (query.Length == 0) CancelSearch();
+        _ = LoadSuggestionsAsync(query);
     }
 
-    private async Task LoadSuggestionsAsync(string? query)
+    private string GetForm() => Query?.Trim() ?? "";
+
+    private void SetForm(string? term)
     {
-        var trimmedQuery = query?.Trim();
+        ClearSuggestions();
+        _suppressQuerySuggestions = true;
+        try { Query = term?.Trim() ?? ""; }
+        finally { _suppressQuerySuggestions = false; }
+    }
+
+    private bool ValidaForm(string query)
+    {
+        if (!string.IsNullOrWhiteSpace(query)) return true;
+
+        ErrorMessage = "Informe uma nota, casa ou perfume para pesquisar.";
+        return false;
+    }
+
+    private void LimpaForm()
+    {
+        SetForm(null);
+        _lastSearch = "";
+        ResultsQuery = null;
+        Results.Clear();
+        ErrorMessage = null;
+        CancelSearch();
+    }
+
+    private void CancelSearch()
+    {
+        var previous = _searchCts;
+        _searchCts = null;
+        previous?.Cancel();
+        IsBusy = false;
+    }
+
+    private void ClearSuggestions()
+    {
         _suggestionsCts?.Cancel();
         Suggestions.Clear();
         ShowSuggestions = false;
-        if (trimmedQuery is null || trimmedQuery.Length < 2) return;
+    }
+
+    private async Task LoadSuggestionsAsync(string trimmedQuery)
+    {
+        ClearSuggestions();
+        if (trimmedQuery.Length < 2) return;
 
         var cts = new CancellationTokenSource();
         _suggestionsCts = cts;
@@ -75,7 +125,7 @@ public partial class ExploreViewModel : BaseViewModel
         try
         {
             await Task.Delay(350, cts.Token);
-            if (cts.IsCancellationRequested || !string.Equals(trimmedQuery, Query?.Trim(), StringComparison.OrdinalIgnoreCase)) return;
+            if (cts.IsCancellationRequested || !string.Equals(trimmedQuery, GetForm(), StringComparison.OrdinalIgnoreCase)) return;
 
             foreach (var note in QuickTerms
                          .Where(term => NoteTranslator.ContainsIgnoringDiacritics(term, trimmedQuery) ||
@@ -87,7 +137,7 @@ public partial class ExploreViewModel : BaseViewModel
             {
                 var apiQuery = NoteTranslator.ToEnglishSearchTerm(trimmedQuery);
                 var matches = await _perfumes.SearchAsync(apiQuery, cts.Token);
-                if (cts.IsCancellationRequested || !string.Equals(trimmedQuery, Query?.Trim(), StringComparison.OrdinalIgnoreCase)) return;
+                if (cts.IsCancellationRequested || !string.Equals(trimmedQuery, GetForm(), StringComparison.OrdinalIgnoreCase)) return;
 
                 foreach (var house in matches
                              .Select(perfume => perfume.House)
@@ -106,7 +156,8 @@ public partial class ExploreViewModel : BaseViewModel
             }
             catch (ApiException) { }
 
-            ShowSuggestions = Suggestions.Count > 0;
+            if (!cts.IsCancellationRequested)
+                ShowSuggestions = Suggestions.Count > 0;
         }
         catch (OperationCanceledException) { }
         finally
@@ -119,14 +170,13 @@ public partial class ExploreViewModel : BaseViewModel
     [RelayCommand(AllowConcurrentExecutions = true)]
     private async Task SearchAsync(string? term)
     {
-        var q = (string.IsNullOrWhiteSpace(term) ? Query : term)?.Trim();
-        if (string.IsNullOrWhiteSpace(q)) return;
-        _suggestionsCts?.Cancel();
-        Suggestions.Clear();
-        ShowSuggestions = false;
-        _suppressQuerySuggestions = true;
-        Query = q;
-        _suppressQuerySuggestions = false;
+        SetForm(string.IsNullOrWhiteSpace(term) ? Query : term);
+        var q = GetForm();
+        if (!ValidaForm(q))
+        {
+            CancelSearch();
+            return;
+        }
 
         using var cts = new CancellationTokenSource();
         var previous = _searchCts;

@@ -43,10 +43,55 @@ public partial class HomeViewModel : BaseViewModel
 
     partial void OnCityChanged(string value)
     {
+        if (_selectingCity) return;
+
+        if (string.IsNullOrEmpty(value))
+        {
+            LimpaForm();
+            return;
+        }
+
         _selectedCity = null;
         ClearCitySuggestions();
-        if (!_selectingCity && value?.Trim().Length >= 2)
+        if (string.IsNullOrWhiteSpace(value))
+            CancelLoad();
+        else if (value.Trim().Length >= 2)
             _ = LoadCitySuggestionsAsync(value);
+    }
+
+    private (string City, CitySuggestion? SelectedCity) GetForm() =>
+        (City?.Trim() ?? "", _selectedCity);
+
+    private void SetForm(CitySuggestion? city)
+    {
+        ClearCitySuggestions();
+        _selectedCity = city;
+        _selectingCity = true;
+        try { City = city?.Name ?? ""; }
+        finally { _selectingCity = false; }
+    }
+
+    private bool ValidaForm(string city)
+    {
+        if (!string.IsNullOrWhiteSpace(city)) return true;
+
+        ErrorMessage = "Informe uma cidade para consultar o clima.";
+        return false;
+    }
+
+    private void LimpaForm()
+    {
+        CancelLoad();
+        SetForm(null);
+        ErrorMessage = null;
+    }
+
+    private void CancelLoad()
+    {
+        var previous = _loadCts;
+        _loadCts = null;
+        previous?.Cancel();
+        IsBusy = false;
     }
 
     private void ClearCitySuggestions()
@@ -83,10 +128,7 @@ public partial class HomeViewModel : BaseViewModel
     {
         if (city is null) return Task.CompletedTask;
 
-        _selectingCity = true;
-        City = city.Name;
-        _selectingCity = false;
-        _selectedCity = city;
+        SetForm(city);
         return LoadAsync();
     }
 
@@ -94,13 +136,18 @@ public partial class HomeViewModel : BaseViewModel
     private async Task LoadAsync()
     {
         ClearCitySuggestions();
+        var (city, selectedCity) = GetForm();
+        if (!ValidaForm(city))
+        {
+            CancelLoad();
+            return;
+        }
+
         using var cts = new CancellationTokenSource();
         var previous = _loadCts;
         _loadCts = cts;
         previous?.Cancel();
 
-        var city = City;
-        var selectedCity = _selectedCity;
         IsBusy = true;
         ErrorMessage = null;
 
